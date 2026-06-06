@@ -435,7 +435,7 @@ const players = [
 
 // PandaScore API
 const PS_TOKEN = 'PXUwtDI-FzjMA9nRKnPNJxwaCGSugwA_mpjCE4hM_kzO5GHT3IU';
-const PS_BASE = 'https://api.pandascore.co';
+const PS_BASE = '/api/ps?endpoint=';
 const CACHE_TTL = 5 * 60 * 1000;
 
 async function psGet(endpoint) {
@@ -450,7 +450,7 @@ async function psGet(endpoint) {
     }
   } catch(e) {}
   try {
-    const res = await fetch(PS_BASE + endpoint + "&token=" + PS_TOKEN);
+    const res = await fetch(PS_BASE + endpoint);
     if (!res.ok) throw new Error(res.status);
     const data = await res.json();
     try { localStorage.setItem(key, JSON.stringify(data)); localStorage.setItem(timeKey, String(now)); } catch(e) {}
