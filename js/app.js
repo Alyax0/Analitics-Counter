@@ -9,12 +9,16 @@ import {
 const game = GAMES[DEFAULT_GAME];
 const REFRESH_EVERY = 2 * 60 * 1000;
 const ROUTES = ['partidos', 'calendario', 'equipos'];
+// Con ?demo se usan siempre los datos guardados en data/demo.json
+const FORCE_DEMO = new URLSearchParams(location.search).has('demo');
 
 const state = {
   status: 'loading', // loading | ready | error
   error: null,
   stale: false,
+  demo: null, // fecha de captura cuando se muestran datos de demo
   at: 0,
+  lastAttempt: 0,
   live: [],
   upcoming: [],
   past: [],
@@ -31,9 +35,51 @@ const searchInput = document.getElementById('search-input');
 
 // ===================== DATOS =====================
 
+function setMatches(live, upcoming, past) {
+  state.live = live;
+  state.upcoming = upcoming;
+  // Resultados recientes e historial de equipos se solapan: deduplicamos
+  state.past = [...new Map(past.map((m) => [m.id, m])).values()]
+    .filter((m) => m.status === 'finished')
+    .sort((a, b) => (b.date || 0) - (a.date || 0));
+  state.stats = buildTeamStats(state.past);
+}
+
+// Respaldo: datos reales capturados de PandaScore y guardados en el repo
+async function loadDemo() {
+  const res = await fetch('data/demo.json');
+  if (!res.ok) throw new Error(`No se pudo cargar el modo demo (${res.status})`);
+  const demo = await res.json();
+  setMatches(demo.running.map(normalizeMatch), demo.upcoming.map(normalizeMatch), demo.past.map(normalizeMatch));
+  state.demo = new Date(demo.capturedAt);
+  state.at = state.demo.getTime();
+  state.stale = false;
+  state.status = 'ready';
+}
+
+// Los resultados recientes cubren pocos días, así que para predecir se pide
+// aparte el historial de los equipos que juegan ahora o pronto. Si falla,
+// se sigue solo con los resultados recientes.
+async function loadTeamHistory(matches, force) {
+  const ids = [...new Set(matches.flatMap((m) => [m.teamA.id, m.teamB.id]).filter(Boolean))].slice(0, 50);
+  if (!ids.length) return [];
+  const params = { per_page: 100, sort: '-scheduled_at', status: 'finished', opponents: ids.sort((a, b) => a - b).join(',') };
+  try {
+    const pages = await Promise.all([
+      psGet(game.slug, 'matches/past', params, { force }),
+      psGet(game.slug, 'matches/past', { ...params, page: 2 }, { force }),
+    ]);
+    return pages.flatMap((r) => r.data.map(normalizeMatch));
+  } catch (e) {
+    console.warn('No se pudo cargar el historial de equipos:', e.message);
+    return [];
+  }
+}
+
 async function load({ force = false } = {}) {
   if (state.loading) return;
   state.loading = true;
+  state.lastAttempt = Date.now();
   if (state.status !== 'ready') {
     state.status = 'loading';
     render();
@@ -41,35 +87,45 @@ async function load({ force = false } = {}) {
     setRefreshing(true);
   }
 
+  if (FORCE_DEMO) {
+    try {
+      await loadDemo();
+    } catch (e) {
+      state.status = 'error';
+      state.error = e.message;
+    }
+    state.loading = false;
+    return render();
+  }
+
   try {
+    // Se ordena por scheduled_at: begin_at viene null en muchos partidos y
+    // PandaScore los pone primero, tapando los resultados reales
     const results = await Promise.all([
       psGet(game.slug, 'matches/running', { per_page: 20 }, { force }),
       psGet(game.slug, 'matches/upcoming', { per_page: 50, sort: 'begin_at' }, { force }),
-      psGet(game.slug, 'matches/past', { per_page: 100, sort: '-begin_at' }, { force }),
-      psGet(game.slug, 'matches/past', { per_page: 100, sort: '-begin_at', page: 2 }, { force }),
+      psGet(game.slug, 'matches/past', { per_page: 100, sort: '-scheduled_at', status: 'finished' }, { force }),
     ]);
-    const [live, upcoming, past1, past2] = results.map((r) => r.data.map(normalizeMatch));
+    const [live, upcoming, recent] = results.map((r) => r.data.map(normalizeMatch));
+    const history = await loadTeamHistory([...live, ...upcoming.slice(0, 20)], force);
 
-    state.live = live;
-    state.upcoming = upcoming;
-    // Las páginas pueden solaparse si terminan partidos entre pedidos;
-    // /past también trae cancelados, que no cuentan como resultados
-    state.past = [...new Map([...past1, ...past2].map((m) => [m.id, m])).values()].filter(
-      (m) => m.status === 'finished',
-    );
-    state.stats = buildTeamStats(state.past);
+    setMatches(live, upcoming, [...recent, ...history]);
+    state.demo = null;
     state.stale = results.some((r) => r.stale);
     state.error = results.find((r) => r.error)?.error || null;
     state.at = Math.min(...results.map((r) => r.at));
     state.status = 'ready';
   } catch (e) {
-    // Si ya había datos en pantalla, los mantenemos y avisamos
+    state.error = e.message;
     if (state.status === 'ready') {
-      state.stale = true;
-      state.error = e.message;
+      // Si ya había datos en pantalla, los mantenemos y avisamos
+      if (!state.demo) state.stale = true;
     } else {
-      state.status = 'error';
-      state.error = e.message;
+      try {
+        await loadDemo();
+      } catch {
+        state.status = 'error';
+      }
     }
   } finally {
     state.loading = false;
@@ -78,7 +134,8 @@ async function load({ force = false } = {}) {
 }
 
 function maybeRefresh() {
-  if (document.visibilityState === 'visible' && !state.loading && Date.now() - state.at > REFRESH_EVERY) load();
+  if (FORCE_DEMO || document.visibilityState !== 'visible' || state.loading) return;
+  if (Date.now() - state.lastAttempt > REFRESH_EVERY) load();
 }
 
 // ===================== VISTAS =====================
@@ -97,6 +154,13 @@ function header(eyebrow, title, accent) {
       </div>
       ${state.status === 'ready' ? updatedBadge() : ''}
     </div>
+    ${state.status === 'ready' && state.demo ? `
+      <div class="notice demo" role="status">
+        <strong>Modo demo:</strong> datos reales de PandaScore capturados el ${esc(captureLabel())}, no se actualizan.
+        ${FORCE_DEMO
+          ? '<a class="link-btn" href="./">Ver datos en vivo</a>'
+          : `La API no está disponible ahora. <button type="button" class="link-btn" data-action="refresh">Reintentar</button>`}
+      </div>` : ''}
     ${state.status === 'ready' && state.stale ? `
       <div class="notice" role="status">
         Mostrando datos guardados: la API no respondió (${esc(state.error || 'error desconocido')}).
@@ -104,10 +168,18 @@ function header(eyebrow, title, accent) {
       </div>` : ''}`;
 }
 
+function captureLabel() {
+  return `${formatShortDate(state.demo)} ${state.demo.getFullYear()}, ${formatTime(state.demo)}`;
+}
+
+function updatedText() {
+  return state.demo ? 'Datos de demo' : `Actualizado ${ago(state.at)}`;
+}
+
 function updatedBadge() {
   return `
     <div class="updated">
-      <span id="updated-text">Actualizado ${ago(state.at)}</span>
+      <span id="updated-text">${updatedText()}</span>
       <button type="button" class="icon-btn ${state.loading ? 'spinning' : ''}" id="refresh-btn" data-action="refresh" aria-label="Actualizar datos" title="Actualizar">↻</button>
     </div>`;
 }
@@ -129,7 +201,8 @@ function viewPartidos() {
   if (state.status === 'loading') return head + skeletonStats() + skeletonList(6);
   if (state.status === 'error') return head + errorState(state.error);
 
-  const now = Date.now();
+  // En demo, "próximas 24 h" se cuenta desde el momento de la captura
+  const now = state.demo ? state.demo.getTime() : Date.now();
   const next24 = state.upcoming.filter((m) => m.date && m.date - now < 24 * 3600 * 1000);
   const leagues = new Set([...state.live, ...next24].map((m) => m.league));
   const finished = state.past.slice(0, 15);
@@ -171,7 +244,7 @@ function viewPartidos() {
       ${chip('finished', 'Finalizados', groups.finished.length)}
     </div>
     ${shown.length ? list(shown) : emptyState(...emptyText)}
-    <p class="footnote">Predicción: tasa de victorias en los últimos 10 partidos de cada equipo (suavizado de Laplace), sobre los ${state.past.length} resultados más recientes. Es un modelo simple con fines demostrativos.</p>`;
+    <p class="footnote">Predicción: tasa de victorias en los últimos 10 partidos de cada equipo (suavizado de Laplace), sobre ${state.past.length} resultados cargados (los más recientes y el historial de los equipos que juegan pronto). Es un modelo simple con fines demostrativos.</p>`;
 }
 
 function viewCalendario() {
@@ -243,7 +316,7 @@ function viewEquipos() {
   if (!rows.length) return head + emptyState('Sin datos', 'Todavía no hay suficientes resultados para armar la tabla.');
   return `
     ${head}
-    <p class="lead">Equipos con al menos 5 partidos entre los ${state.past.length} resultados más recientes, ordenados por % de victorias en sus últimos 10. No es un ranking oficial.</p>
+    <p class="lead">Equipos con al menos 5 partidos entre los ${state.past.length} resultados cargados (los más recientes y el historial de los equipos que juegan pronto), ordenados por % de victorias en sus últimos 10. No es un ranking oficial.</p>
     ${teamTable(rows)}`;
 }
 
@@ -390,7 +463,7 @@ document.addEventListener('visibilitychange', maybeRefresh);
 setInterval(maybeRefresh, 30 * 1000);
 setInterval(() => {
   const el = document.getElementById('updated-text');
-  if (el && state.at) el.textContent = `Actualizado ${ago(state.at)}`;
+  if (el && state.at) el.textContent = updatedText();
 }, 30 * 1000);
 
 // ===================== INICIO =====================
