@@ -1,0 +1,56 @@
+# Cada 30 minutos: guarda predicciones de partidos que empiezan pronto y
+# resuelve las pendientes. Los datos se commitean en la rama "data", así el
+# historial de git prueba que cada predicción se hizo antes del partido.
+name: Predicciones
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: predictions
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Preparar la rama data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git fetch --depth=1 origin data; then
+            git worktree add data-branch FETCH_HEAD
+            git -C data-branch checkout -B data
+          else
+            git worktree add --detach data-branch
+            git -C data-branch checkout --orphan data
+            git -C data-branch rm -rfq .
+          fi
+
+      - name: Actualizar predicciones
+        env:
+          PANDASCORE_TOKEN: ${{ secrets.PANDASCORE_TOKEN }}
+        run: node scripts/predictions.mjs --data data-branch
+
+      - name: Guardar en la rama data
+        working-directory: data-branch
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Sin cambios"
+            exit 0
+          fi
+          git commit -qm "Predicciones $(date -u +'%Y-%m-%d %H:%M') UTC"
+          git push origin data

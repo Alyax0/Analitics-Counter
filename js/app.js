@@ -1,5 +1,5 @@
 import { GAMES, DEFAULT_GAME } from './games.js';
-import { psGet, newsGet, clearLegacyCache } from './api.js';
+import { psGet, newsGet, summaryGet, clearLegacyCache, PREDICTIONS_REPO } from './api.js';
 import { normalizeMatch, normalizeRoster, buildTeamStats, recentRecord, predict, headToHead } from './model.js';
 import {
   esc, safeUrl, ago, dayKey, dayLabel, formatTime, formatShortDate, whenLabel, timezoneLabel,
@@ -8,7 +8,7 @@ import {
 } from './ui.js';
 
 const REFRESH_EVERY = 2 * 60 * 1000;
-const ROUTES = ['partidos', 'calendario', 'equipos', 'noticias'];
+const ROUTES = ['partidos', 'calendario', 'equipos', 'noticias', 'aciertos'];
 // Con ?demo se usan siempre los datos guardados (game.demoFile)
 const FORCE_DEMO = new URLSearchParams(location.search).has('demo');
 
@@ -40,6 +40,8 @@ function gameState() {
     loading: false,
     // Noticias: se cargan recién al entrar a la sección
     news: { status: 'idle', items: [], sources: {}, at: 0, stale: false, error: null, filter: 'all' },
+    // Historial de predicciones: también se carga al entrar a la sección
+    acc: { status: 'idle', data: null, error: null, loading: false },
     rosters: new Map(), // teamId → plantel normalizado o { error }
   };
 }
@@ -195,6 +197,22 @@ async function loadNews({ force = false } = {}) {
   }
   news.loading = false;
   if (currentRoute() === 'noticias' && !state.query) render();
+}
+
+async function loadSummary({ force = false } = {}) {
+  const acc = state.acc;
+  if (acc.loading) return;
+  acc.loading = true;
+  if (acc.status !== 'ready') acc.status = 'loading';
+  try {
+    const r = await summaryGet({ force });
+    Object.assign(acc, { status: 'ready', data: r.data, error: null });
+  } catch (e) {
+    if (acc.status !== 'ready') acc.status = 'error';
+    acc.error = e.message;
+  }
+  acc.loading = false;
+  if (acc === state.acc && currentRoute() === 'aciertos' && !state.query) render();
 }
 
 // Planteles de los equipos pedidos que todavía no están cargados
@@ -449,6 +467,91 @@ function viewNoticias() {
     <p class="footnote">${esc(game.news.footnote)} Cada nota abre en su fuente original.</p>`;
 }
 
+const pct = (x) => (x == null ? '—' : `${Math.round(x * 100)}%`);
+
+function predRow(r) {
+  const favProb = r.favorite === 'B' ? 100 - r.probA : r.probA;
+  const name = (side) => {
+    const t = side === 'A' ? r.teamA : r.teamB;
+    return r.favorite === side ? `<strong>${esc(t.name)}</strong>` : esc(t.name);
+  };
+  let outcome;
+  if (r.status === 'pending') outcome = `<span class="muted">${esc(whenLabel(new Date(r.scheduledAt)))}</span>`;
+  else if (r.status === 'void') outcome = `<span class="muted">No cuenta · ${esc(r.reason)}</span>`;
+  else {
+    const mark = r.correct === null ? '<span class="muted">Parejo</span>' : r.correct ? '<span class="ok">✓ Acertó</span>' : '<span class="ko">✗ Falló</span>';
+    outcome = `<span class="nowrap">${r.result.scoreA}–${r.result.scoreB}</span> ${mark}`;
+  }
+  return `
+    <li class="pred-row">
+      <span class="pred-date muted">${esc(formatShortDate(new Date(r.scheduledAt)))}</span>
+      <span class="pred-match">${name('A')} <span class="muted">vs</span> ${name('B')}<span class="pred-league">${esc(r.league)} · confianza ${esc(r.confidence)}</span></span>
+      <span class="pred-prob">${r.favorite ? `${favProb}%` : '50%'}</span>
+      <span class="pred-outcome">${outcome}</span>
+    </li>`;
+}
+
+function viewAciertos() {
+  const acc = state.acc;
+  const head = `
+    <div class="page-head">
+      <div>
+        <div class="eyebrow">● Historial verificable</div>
+        <h1 class="heading">Aciertos <span>del modelo</span></h1>
+      </div>
+      ${acc.status === 'ready' && acc.data.updatedAt ? `<div class="updated"><span>Último cambio ${ago(Date.parse(acc.data.updatedAt))}</span></div>` : ''}
+    </div>`;
+  if (acc.status === 'idle' || acc.status === 'loading') return head + skeletonStats() + skeletonList(4);
+  if (acc.status === 'error') {
+    if (/404/.test(acc.error)) {
+      return head + emptyState('El registro todavía no empezó', 'La primera ejecución automática crea el historial. Volvé a mirar en un rato.');
+    }
+    return head + `
+      <div class="state error" role="alert">
+        <div class="state-title">No pudimos cargar el historial</div>
+        <p>${esc(acc.error)}</p>
+        <button type="button" class="btn" data-action="refresh-acc">Reintentar</button>
+      </div>`;
+  }
+
+  const g = acc.data.games[game.id];
+  const footnote = `
+    <p class="footnote">
+      Cada predicción se guarda unas horas antes del partido y no se modifica después; si quedó guardada después del inicio, se anula.
+      Cancelados, W.O. y empates no cuentan. Modelo <code>${esc(acc.data.model)}</code>.
+      Todo el registro está en el <a href="${PREDICTIONS_REPO}/commits/data" target="_blank" rel="noopener noreferrer">historial de la rama data en GitHub ↗</a>.
+    </p>`;
+  if (!g) return head + emptyState(`Sin predicciones de ${game.name} todavía`, 'Se registran solas unas horas antes de cada partido.') + footnote;
+
+  const levels = ['alta', 'media', 'baja'].map((level) => ({ level, ...g.byConfidence[level] }));
+  return `
+    ${head}
+    <div class="stat-row">
+      <div class="stat-item"><div class="s-label">Aciertos</div><div class="s-val accent">${pct(g.accuracy)}</div><div class="s-sub">${g.correct} de ${g.decided} con favorito</div></div>
+      <div class="stat-item"><div class="s-label">Resueltas</div><div class="s-val">${g.resolved}</div><div class="s-sub">desde el ${esc(formatShortDate(new Date(g.since)))}</div></div>
+      <div class="stat-item"><div class="s-label">Brier score</div><div class="s-val">${g.brier == null ? '—' : g.brier.toFixed(3)}</div><div class="s-sub">menor es mejor · azar: 0.250</div></div>
+      <div class="stat-item"><div class="s-label">Pendientes</div><div class="s-val">${g.pending}</div><div class="s-sub">esperando resultado</div></div>
+    </div>
+    ${!g.resolved ? '<div class="notice" role="status">Todavía no terminó ningún partido con predicción. Los primeros resultados aparecen apenas terminen.</div>' : ''}
+    <h2 class="section-label">Por nivel de confianza</h2>
+    <div class="table-wrap">
+      <table class="teams compact">
+        <thead><tr><th scope="col">Confianza</th><th scope="col">Partidos</th><th scope="col">Aciertos</th></tr></thead>
+        <tbody>
+          ${levels.map((l) => `
+            <tr>
+              <td><span class="conf conf-${l.level}">${l.level[0].toUpperCase() + l.level.slice(1)}</span></td>
+              <td>${l.n}</td>
+              <td>${l.n ? `<div class="pct"><span class="pct-bar"><span style="width:${Math.round((l.correct / l.n) * 100)}%"></span></span><strong>${pct(l.correct / l.n)}</strong></div>` : '<span class="muted">—</span>'}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    ${g.pendingList.length ? `<h2 class="section-label">Próximas (ya guardadas)</h2><ul class="pred-list">${g.pendingList.map(predRow).join('')}</ul>` : ''}
+    ${g.recent.length ? `<h2 class="section-label">Últimas resueltas</h2><ul class="pred-list">${g.recent.map(predRow).join('')}</ul>` : ''}
+    ${footnote}`;
+}
+
 function viewSearch() {
   const q = state.query.toLowerCase();
   const head = `<div class="page-head"><div><div class="eyebrow">● Búsqueda</div><h1 class="heading">Resultados para <span>“${esc(state.query)}”</span></h1></div></div>`;
@@ -484,12 +587,16 @@ function render() {
   });
 
   if (route === 'noticias' && !state.query && state.news.status === 'idle') loadNews();
+  if (route === 'aciertos' && !state.query && state.acc.status === 'idle') loadSummary();
 
-  const busy = route === 'noticias' ? state.news.status === 'loading' : state.status === 'loading';
+  const busy =
+    route === 'noticias' ? state.news.status === 'loading'
+      : route === 'aciertos' ? state.acc.status === 'loading'
+        : state.status === 'loading';
   app.setAttribute('aria-busy', String(busy));
   app.innerHTML = state.query
     ? viewSearch()
-    : { partidos: viewPartidos, calendario: viewCalendario, equipos: viewEquipos, noticias: viewNoticias }[route]();
+    : { partidos: viewPartidos, calendario: viewCalendario, equipos: viewEquipos, noticias: viewNoticias, aciertos: viewAciertos }[route]();
 }
 
 // ===================== MODAL =====================
@@ -649,6 +756,10 @@ document.addEventListener('click', (e) => {
   if (action === 'retry' || action === 'refresh') return load({ force: true });
   if (action === 'refresh-news') {
     loadNews({ force: true });
+    return render();
+  }
+  if (action === 'refresh-acc') {
+    loadSummary({ force: true });
     return render();
   }
   if (action === 'close-modal') return modal.close();

@@ -18,6 +18,18 @@ Cada juego tiene sus propias secciones, con rutas `#/cs2/...` y `#/valorant/...`
 
 Para cada equipo se toma su tasa de victorias en los últimos 10 partidos, suavizada con Laplace: `s = (victorias + 1) / (partidos + 2)`. La probabilidad del equipo A es `sA / (sA + sB)`. Si alguno de los dos tiene menos de 3 partidos en los datos, no se predice. Es un modelo deliberadamente simple y explicable.
 
+### Historial de predicciones y % de aciertos
+
+Un workflow de GitHub Actions (`.github/workflows/predictions.yml`) corre cada 30 minutos:
+
+1. Guarda la predicción de cada partido que empieza en las próximas 6 horas, con la hora en que se hizo. No se modifica nunca.
+2. Cuando el partido termina, anota el resultado. Si la predicción quedó guardada después del inicio real, se anula.
+3. Commitea todo en la rama [`data`](https://github.com/Alyax0/Analitics-Counter/tree/data): `predictions/<juego>/<AAAA-MM>.json` (un registro por línea) y `predictions/summary.json`, que es lo que lee la sección **Aciertos**.
+
+El historial de commits de esa rama es la prueba pública de que cada predicción se hizo antes del partido. No cuentan los cancelados, los ganados por W.O. ni los empates. Además del % de aciertos se muestra el [Brier score](https://es.wikipedia.org/wiki/Puntuaci%C3%B3n_de_Brier) (0 es perfecto; tirar una moneda da 0.25).
+
+Para que funcione, el repo necesita el secreto `PANDASCORE_TOKEN` en *Settings → Secrets and variables → Actions*.
+
 ## Stack
 
 - HTML, CSS y JavaScript con módulos ES, sin frameworks ni paso de build.
@@ -33,6 +45,7 @@ js/ui.js          formato y componentes HTML
 js/app.js         estado, vistas, ruteo por hash y eventos
 api/ps.js         proxy serverless a PandaScore
 api/news.js       noticias por juego (HLTV, Steam, VLR.gg), con caché de 15 min
+scripts/          registro de predicciones (lo corre GitHub Actions)
 ```
 
 > Las estadísticas individuales de jugadores (K/D, ADR, rating) no están en el plan gratuito de PandaScore, así que la página no las muestra.

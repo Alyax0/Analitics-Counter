@@ -56,6 +56,19 @@ export function newsGet(gameId, { force = false } = {}) {
   });
 }
 
+// Historial de predicciones: lo escribe el workflow de GitHub Actions en la
+// rama "data" y se lee directo de GitHub (sin pasar por Vercel)
+export const PREDICTIONS_REPO = 'https://github.com/Alyax0/Analitics-Counter';
+const SUMMARY_URL = 'https://raw.githubusercontent.com/Alyax0/Analitics-Counter/data/predictions/summary.json';
+
+export function summaryGet({ force = false } = {}) {
+  return cachedJson(`${CACHE_PREFIX}predictions`, SUMMARY_URL, {
+    ttl: 5 * 60 * 1000,
+    force,
+    validate: (b) => b && b.overall && b.games,
+  });
+}
+
 // Limpia entradas del formato viejo (ps_cache_*) que guardaban errores
 export function clearLegacyCache() {
   try {
