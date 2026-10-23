@@ -48,8 +48,8 @@ export function psGet(game, path, params = {}, { force = false } = {}) {
   return cachedJson(`${CACHE_PREFIX}${query}`, `/api/ps?${query}`, { ttl, force, validate: Array.isArray });
 }
 
-export function newsGet({ force = false } = {}) {
-  return cachedJson(`${CACHE_PREFIX}news`, '/api/news', {
+export function newsGet(gameId, { force = false } = {}) {
+  return cachedJson(`${CACHE_PREFIX}news_${gameId}`, `/api/news?game=${encodeURIComponent(gameId)}`, {
     ttl: NEWS_TTL,
     force,
     validate: (b) => b && Array.isArray(b.items),

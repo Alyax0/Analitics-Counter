@@ -7,30 +7,44 @@ import {
   rosterGrid, newsCard,
 } from './ui.js';
 
-const game = GAMES[DEFAULT_GAME];
 const REFRESH_EVERY = 2 * 60 * 1000;
 const ROUTES = ['partidos', 'calendario', 'equipos', 'noticias'];
-// Con ?demo se usan siempre los datos guardados en data/demo.json
+// Con ?demo se usan siempre los datos guardados (game.demoFile)
 const FORCE_DEMO = new URLSearchParams(location.search).has('demo');
 
-const state = {
-  status: 'loading', // loading | ready | error
-  error: null,
-  stale: false,
-  demo: null, // fecha de captura cuando se muestran datos de demo
-  at: 0,
-  lastAttempt: 0,
-  live: [],
-  upcoming: [],
-  past: [],
-  stats: new Map(),
-  filter: 'all',
-  query: '',
-  loading: false,
-  // Noticias: se cargan recién al entrar a la sección
-  news: { status: 'idle', items: [], sources: {}, at: 0, stale: false, error: null, filter: 'all' },
-  rosters: new Map(), // teamId → plantel normalizado o { error }
-};
+// Rutas: #/<juego>/<sección>. Las viejas (#/partidos) siguen yendo a CS2.
+function parseHash() {
+  const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+  const gameId = GAMES[parts[0]] ? parts.shift() : DEFAULT_GAME;
+  return { gameId, route: ROUTES.includes(parts[0]) ? parts[0] : 'partidos' };
+}
+
+let game = GAMES[parseHash().gameId];
+// Se incrementa al cambiar de juego para descartar respuestas del juego anterior
+let loadGen = 0;
+
+// Datos que dependen del juego; se reinician al cambiarlo
+function gameState() {
+  return {
+    status: 'loading', // loading | ready | error
+    error: null,
+    stale: false,
+    demo: null, // fecha de captura cuando se muestran datos de demo
+    at: 0,
+    lastAttempt: 0,
+    live: [],
+    upcoming: [],
+    past: [],
+    stats: new Map(),
+    filter: 'all',
+    loading: false,
+    // Noticias: se cargan recién al entrar a la sección
+    news: { status: 'idle', items: [], sources: {}, at: 0, stale: false, error: null, filter: 'all' },
+    rosters: new Map(), // teamId → plantel normalizado o { error }
+  };
+}
+
+const state = { ...gameState(), query: '' };
 
 const app = document.getElementById('app');
 const modal = document.getElementById('modal');
@@ -50,10 +64,11 @@ function setMatches(live, upcoming, past) {
 }
 
 // Respaldo: datos reales capturados de PandaScore y guardados en el repo
-async function loadDemo() {
-  const res = await fetch('data/demo.json');
+async function loadDemo(gen) {
+  const res = await fetch(game.demoFile);
   if (!res.ok) throw new Error(`No se pudo cargar el modo demo (${res.status})`);
   const demo = await res.json();
+  if (gen !== loadGen) return;
   setMatches(demo.running.map(normalizeMatch), demo.upcoming.map(normalizeMatch), demo.past.map(normalizeMatch));
   state.demo = new Date(demo.capturedAt);
   state.at = state.demo.getTime();
@@ -82,6 +97,7 @@ async function loadTeamHistory(matches, force) {
 
 async function load({ force = false } = {}) {
   if (state.loading) return;
+  const gen = loadGen;
   state.loading = true;
   state.lastAttempt = Date.now();
   if (state.status !== 'ready') {
@@ -93,11 +109,13 @@ async function load({ force = false } = {}) {
 
   if (FORCE_DEMO) {
     try {
-      await loadDemo();
+      await loadDemo(gen);
     } catch (e) {
+      if (gen !== loadGen) return;
       state.status = 'error';
       state.error = e.message;
     }
+    if (gen !== loadGen) return;
     state.loading = false;
     return render();
   }
@@ -112,6 +130,7 @@ async function load({ force = false } = {}) {
     ]);
     const [live, upcoming, recent] = results.map((r) => r.data.map(normalizeMatch));
     const history = await loadTeamHistory([...live, ...upcoming.slice(0, 20)], force);
+    if (gen !== loadGen) return;
 
     setMatches(live, upcoming, [...recent, ...history]);
     state.demo = null;
@@ -120,21 +139,38 @@ async function load({ force = false } = {}) {
     state.at = Math.min(...results.map((r) => r.at));
     state.status = 'ready';
   } catch (e) {
+    if (gen !== loadGen) return;
     state.error = e.message;
     if (state.status === 'ready') {
       // Si ya había datos en pantalla, los mantenemos y avisamos
       if (!state.demo) state.stale = true;
     } else {
       try {
-        await loadDemo();
+        await loadDemo(gen);
       } catch {
-        state.status = 'error';
+        if (gen === loadGen) state.status = 'error';
       }
     }
-  } finally {
-    state.loading = false;
-    render();
   }
+  // Si cambió el juego mientras cargaba, esta respuesta ya no importa
+  if (gen !== loadGen) return;
+  state.loading = false;
+  render();
+}
+
+function switchGame(gameId) {
+  loadGen++;
+  game = GAMES[gameId];
+  Object.assign(state, gameState());
+  applyGame();
+  if (modal.open) modal.close();
+  load();
+}
+
+function applyGame() {
+  document.documentElement.style.setProperty('--accent', game.accent);
+  document.querySelector('.logo').innerHTML = `${esc(game.brand)}<em>STATS</em>`;
+  document.title = `${game.brand}STATS · ${game.name}: partidos y predicciones`;
 }
 
 async function loadNews({ force = false } = {}) {
@@ -143,7 +179,8 @@ async function loadNews({ force = false } = {}) {
   news.loading = true;
   if (news.status !== 'ready') news.status = 'loading';
   try {
-    const r = await newsGet({ force });
+    const r = await newsGet(game.id, { force });
+    if (news !== state.news) return; // cambió el juego
     Object.assign(news, {
       status: 'ready',
       items: r.data.items,
@@ -187,8 +224,7 @@ function maybeRefresh() {
 // ===================== VISTAS =====================
 
 function currentRoute() {
-  const r = location.hash.replace(/^#\/?/, '');
-  return ROUTES.includes(r) ? r : 'partidos';
+  return parseHash().route;
 }
 
 function header(eyebrow, title, accent) {
@@ -204,7 +240,7 @@ function header(eyebrow, title, accent) {
       <div class="notice demo" role="status">
         <strong>Modo demo:</strong> datos reales de PandaScore capturados el ${esc(captureLabel())}, no se actualizan.
         ${FORCE_DEMO
-          ? '<a class="link-btn" href="./">Ver datos en vivo</a>'
+          ? `<a class="link-btn" href="./#/${game.id}/partidos">Ver datos en vivo</a>`
           : `La API no está disponible ahora. <button type="button" class="link-btn" data-action="refresh">Reintentar</button>`}
       </div>` : ''}
     ${state.status === 'ready' && state.stale ? `
@@ -371,7 +407,7 @@ function viewNoticias() {
   const head = `
     <div class="page-head">
       <div>
-        <div class="eyebrow">● HLTV y Valve</div>
+        <div class="eyebrow">● ${esc(game.news.eyebrow)}</div>
         <h1 class="heading">Noticias <span>&amp; actualizaciones</span></h1>
       </div>
       ${news.status === 'ready' ? `
@@ -392,23 +428,25 @@ function viewNoticias() {
       </div>`;
   }
 
-  const failed = Object.entries(news.sources).filter(([, v]) => v !== 'ok').map(([k]) => (k === 'hltv' ? 'HLTV' : 'Steam'));
+  const sources = game.news.sources;
+  const labelOf = (id) => sources.find((s) => s.id === id)?.label || id;
+  const failed = Object.entries(news.sources).filter(([, v]) => v !== 'ok').map(([k]) => labelOf(k));
   const shown = news.filter === 'all' ? news.items : news.items.filter((n) => n.source === news.filter);
   const count = (s) => news.items.filter((n) => n.source === s).length;
   const chip = (id, label, n) =>
-    `<button type="button" class="chip ${news.filter === id ? 'active' : ''}" data-news-filter="${id}" aria-pressed="${news.filter === id}">${label} <span>${n}</span></button>`;
+    `<button type="button" class="chip ${news.filter === id ? 'active' : ''}" data-news-filter="${esc(id)}" aria-pressed="${news.filter === id}">${esc(label)} <span>${n}</span></button>`;
 
   return `
     ${head}
     ${news.stale ? `<div class="notice" role="status">Mostrando noticias guardadas: no se pudieron actualizar (${esc(news.error || 'error')}).</div>` : ''}
     ${failed.length && !news.stale ? `<div class="notice" role="status">No se pudo cargar ${esc(failed.join(' ni '))} por ahora; se muestran las demás fuentes.</div>` : ''}
-    <div class="chips" role="group" aria-label="Filtrar noticias">
-      ${chip('all', 'Todas', news.items.length)}
-      ${chip('HLTV', 'HLTV', count('HLTV'))}
-      ${chip('Steam', 'Actualizaciones de CS2', count('Steam'))}
-    </div>
+    ${sources.length > 1 ? `
+      <div class="chips" role="group" aria-label="Filtrar noticias">
+        ${chip('all', 'Todas', news.items.length)}
+        ${sources.map((s) => chip(s.id, s.label, count(s.id))).join('')}
+      </div>` : ''}
     ${shown.length ? `<div class="news-grid">${shown.map(newsCard).join('')}</div>` : emptyState('Sin noticias', 'Esta fuente no tiene novedades por ahora.')}
-    <p class="footnote">Titulares de HLTV.org y anuncios oficiales de Valve en Steam. Cada nota abre en su fuente original.</p>`;
+    <p class="footnote">${esc(game.news.footnote)} Cada nota abre en su fuente original.</p>`;
 }
 
 function viewSearch() {
@@ -429,7 +467,16 @@ function viewSearch() {
 
 function render() {
   const route = currentRoute();
+  document.querySelector('.logo').setAttribute('href', `#/${game.id}/partidos`);
+  document.querySelectorAll('.game-opt').forEach((a) => {
+    const active = a.dataset.game === game.id;
+    a.setAttribute('href', `#/${a.dataset.game}/${route}`);
+    a.classList.toggle('active', active);
+    if (active) a.setAttribute('aria-current', 'true');
+    else a.removeAttribute('aria-current');
+  });
   document.querySelectorAll('.tab').forEach((t) => {
+    t.setAttribute('href', `#/${game.id}/${t.dataset.route}`);
     const active = !state.query && t.dataset.route === route;
     t.classList.toggle('active', active);
     if (active) t.setAttribute('aria-current', 'page');
@@ -625,6 +672,8 @@ searchInput.addEventListener('input', () => {
 
 window.addEventListener('hashchange', () => {
   window.scrollTo(0, 0);
+  const { gameId } = parseHash();
+  if (gameId !== game.id) return switchGame(gameId);
   render();
 });
 
@@ -637,6 +686,6 @@ setInterval(() => {
 
 // ===================== INICIO =====================
 
-document.documentElement.style.setProperty('--accent', game.accent);
+applyGame();
 clearLegacyCache();
 load();
