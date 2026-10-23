@@ -3,6 +3,8 @@
 //
 // Uso: /api/ps?game=csgo&path=matches/upcoming&per_page=50&sort=begin_at
 // Solo se aceptan los juegos, rutas y parámetros de las listas de abajo.
+// Los filtros van con nombres planos (status, opponents) y acá se traducen
+// a la sintaxis filter[...] de PandaScore.
 
 const GAMES = new Set(['csgo']);
 
@@ -25,6 +27,15 @@ function buildParams(query) {
     if (!SORTS.has(query.sort)) return null;
     params.set('sort', query.sort);
   }
+  if (query.status) {
+    if (query.status !== 'finished') return null;
+    params.set('filter[status]', 'finished');
+  }
+  if (query.opponents) {
+    // Lista de ids de equipos separados por coma, hasta 50
+    if (!/^\d+(,\d+){0,49}$/.test(query.opponents)) return null;
+    params.set('filter[opponent_id]', query.opponents);
+  }
   return params;
 }
 
@@ -39,7 +50,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Juego o ruta no permitidos' });
   }
   const params = buildParams(req.query);
-  if (!params) return res.status(400).json({ error: 'Parámetro sort no permitido' });
+  if (!params) return res.status(400).json({ error: 'Parámetro no permitido' });
 
   const token = process.env.PANDASCORE_TOKEN;
   if (!token) return res.status(500).json({ error: 'Falta configurar PANDASCORE_TOKEN' });

@@ -6,7 +6,8 @@ Partidos de Counter-Strike 2 en vivo, calendario y una predicción simple basada
 
 - **Partidos:** en vivo, próximos y finalizados, con formato (BO1/BO3/BO5), marcador y probabilidad estimada.
 - **Calendario:** próximos partidos agrupados por día, en la zona horaria de quien visita.
-- **Equipos en forma:** % de victorias en los últimos 10 partidos, calculado sobre los ~200 resultados más recientes.
+- **Equipos en forma:** % de victorias en los últimos 10 partidos, calculado sobre los resultados recientes más el historial de los equipos que juegan pronto.
+- **Modo demo:** si la API no responde, se cargan datos reales capturados en `data/demo.json`, con un aviso. Con `?demo` en la URL se fuerza ese modo.
 - **Detalle de partido:** forma de cada equipo, cruces recientes y enlace a la transmisión.
 
 ### Cómo se calcula la predicción
