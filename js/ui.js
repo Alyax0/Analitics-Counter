@@ -133,6 +133,43 @@ export function matchCard(m, pred) {
     </button>`;
 }
 
+// Código ISO de 2 letras → bandera emoji (indicadores regionales)
+export function flag(code) {
+  if (!code || !/^[a-z]{2}$/i.test(code)) return '';
+  return String.fromCodePoint(...[...code.toUpperCase()].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
+}
+
+export function rosterGrid(roster) {
+  if (!roster) return '<div class="roster" aria-hidden="true">' + '<div class="player"><span class="sk w60"></span></div>'.repeat(5) + '</div>';
+  if (roster.error) return `<p class="muted small">${esc(roster.error)}</p>`;
+  if (!roster.players.length) return '<p class="muted small">PandaScore no tiene el plantel de este equipo.</p>';
+  return `<ul class="roster">${roster.players.map((p) => {
+    const photo = p.photo && safeUrl(p.photo);
+    const meta = [p.fullName, p.age ? `${p.age} años` : ''].filter(Boolean).join(' · ');
+    return `
+      <li class="player">
+        <span class="player-photo" aria-hidden="true">${esc(p.name.slice(0, 2))}${photo ? `<img src="${esc(photo)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}</span>
+        <span class="player-info">
+          <span class="player-name">${p.nationality ? `<span class="flag" title="${esc(p.nationality)}">${flag(p.nationality)}</span>` : ''}${esc(p.name)}</span>
+          ${meta ? `<span class="player-meta">${esc(meta)}</span>` : ''}
+        </span>
+      </li>`;
+  }).join('')}</ul>`;
+}
+
+export function newsCard(n) {
+  const url = safeUrl(n.url);
+  if (!url) return '';
+  const d = new Date(n.date);
+  return `
+    <a class="news-card" href="${esc(url)}" target="_blank" rel="noopener noreferrer">
+      <span class="news-top"><span class="news-tag ${n.source === 'Steam' ? 'steam' : ''}">${esc(n.source)} · ${esc(n.kind)}</span><time datetime="${esc(n.date)}">${esc(whenLabel(d))}</time></span>
+      <span class="news-title">${esc(n.title)}</span>
+      ${n.summary ? `<span class="news-summary">${esc(n.summary)}</span>` : ''}
+      <span class="news-link">Leer en ${esc(n.source)} ↗</span>
+    </a>`;
+}
+
 export function skeletonList(n = 5) {
   return `<div class="list" aria-hidden="true">${'<div class="skeleton-card"><span class="sk w30"></span><span class="sk w60"></span><span class="sk w40"></span></div>'.repeat(n)}</div>`;
 }

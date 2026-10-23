@@ -1,14 +1,15 @@
 import { GAMES, DEFAULT_GAME } from './games.js';
-import { psGet, clearLegacyCache } from './api.js';
-import { normalizeMatch, buildTeamStats, recentRecord, predict, headToHead } from './model.js';
+import { psGet, newsGet, clearLegacyCache } from './api.js';
+import { normalizeMatch, normalizeRoster, buildTeamStats, recentRecord, predict, headToHead } from './model.js';
 import {
   esc, safeUrl, ago, dayKey, dayLabel, formatTime, formatShortDate, whenLabel, timezoneLabel,
   teamLogo, formDots, probBar, matchCard, skeletonList, skeletonStats, emptyState, errorState,
+  rosterGrid, newsCard,
 } from './ui.js';
 
 const game = GAMES[DEFAULT_GAME];
 const REFRESH_EVERY = 2 * 60 * 1000;
-const ROUTES = ['partidos', 'calendario', 'equipos'];
+const ROUTES = ['partidos', 'calendario', 'equipos', 'noticias'];
 // Con ?demo se usan siempre los datos guardados en data/demo.json
 const FORCE_DEMO = new URLSearchParams(location.search).has('demo');
 
@@ -26,6 +27,9 @@ const state = {
   filter: 'all',
   query: '',
   loading: false,
+  // Noticias: se cargan recién al entrar a la sección
+  news: { status: 'idle', items: [], sources: {}, at: 0, stale: false, error: null, filter: 'all' },
+  rosters: new Map(), // teamId → plantel normalizado o { error }
 };
 
 const app = document.getElementById('app');
@@ -131,6 +135,48 @@ async function load({ force = false } = {}) {
     state.loading = false;
     render();
   }
+}
+
+async function loadNews({ force = false } = {}) {
+  const news = state.news;
+  if (news.loading) return;
+  news.loading = true;
+  if (news.status !== 'ready') news.status = 'loading';
+  try {
+    const r = await newsGet({ force });
+    Object.assign(news, {
+      status: 'ready',
+      items: r.data.items,
+      sources: r.data.sources || {},
+      at: r.at,
+      stale: r.stale,
+      error: r.error || null,
+    });
+  } catch (e) {
+    if (news.status !== 'ready') news.status = 'error';
+    news.error = e.message;
+  }
+  news.loading = false;
+  if (currentRoute() === 'noticias' && !state.query) render();
+}
+
+// Planteles de los equipos pedidos que todavía no están cargados
+async function ensureRosters(ids) {
+  const missing = ids.filter((id) => id && !state.rosters.has(id));
+  if (missing.length) {
+    try {
+      const r = await psGet(game.slug, 'teams', { ids: missing.join(','), per_page: 50 });
+      for (const t of r.data) state.rosters.set(t.id, normalizeRoster(t));
+      for (const id of missing) if (!state.rosters.has(id)) state.rosters.set(id, { id, players: [] });
+    } catch {
+      for (const id of missing) state.rosters.set(id, { id, error: 'No se pudo cargar el plantel.' });
+    }
+  }
+  // Reemplaza los huecos que haya en el modal abierto
+  document.querySelectorAll('[data-roster]').forEach((el) => {
+    const roster = state.rosters.get(Number(el.dataset.roster));
+    if (roster) el.innerHTML = rosterGrid(roster);
+  });
 }
 
 function maybeRefresh() {
@@ -296,7 +342,7 @@ function teamTable(rows) {
             return `
               <tr>
                 <td class="pos">${i + 1}</td>
-                <td><div class="team-cell">${teamLogo(team, 'sm')}<span>${esc(team.name)}</span></div></td>
+                <td><button type="button" class="team-cell team-link" data-team="${team.id}">${teamLogo(team, 'sm')}<span>${esc(team.name)}</span></button></td>
                 <td class="nowrap">${rec.wins}–${rec.losses}${rec.draws ? `–${rec.draws}` : ''}</td>
                 <td><div class="pct"><span class="pct-bar"><span style="width:${pct}%"></span></span><strong>${pct}%</strong></div></td>
                 <td>${formDots(rec.history)}</td>
@@ -318,6 +364,51 @@ function viewEquipos() {
     ${head}
     <p class="lead">Equipos con al menos 5 partidos entre los ${state.past.length} resultados cargados (los más recientes y el historial de los equipos que juegan pronto), ordenados por % de victorias en sus últimos 10. No es un ranking oficial.</p>
     ${teamTable(rows)}`;
+}
+
+function viewNoticias() {
+  const news = state.news;
+  const head = `
+    <div class="page-head">
+      <div>
+        <div class="eyebrow">● HLTV y Valve</div>
+        <h1 class="heading">Noticias <span>&amp; actualizaciones</span></h1>
+      </div>
+      ${news.status === 'ready' ? `
+        <div class="updated">
+          <span>Actualizado ${ago(news.at)}</span>
+          <button type="button" class="icon-btn ${news.loading ? 'spinning' : ''}" data-action="refresh-news" aria-label="Actualizar noticias" title="Actualizar">↻</button>
+        </div>` : ''}
+    </div>`;
+  if (news.status === 'idle' || news.status === 'loading') {
+    return head + `<div class="news-grid" aria-hidden="true">${'<div class="skeleton-card"><span class="sk w30"></span><span class="sk w60"></span><span class="sk w40"></span></div>'.repeat(6)}</div>`;
+  }
+  if (news.status === 'error') {
+    return head + `
+      <div class="state error" role="alert">
+        <div class="state-title">No pudimos cargar las noticias</div>
+        <p>${esc(news.error)}</p>
+        <button type="button" class="btn" data-action="refresh-news">Reintentar</button>
+      </div>`;
+  }
+
+  const failed = Object.entries(news.sources).filter(([, v]) => v !== 'ok').map(([k]) => (k === 'hltv' ? 'HLTV' : 'Steam'));
+  const shown = news.filter === 'all' ? news.items : news.items.filter((n) => n.source === news.filter);
+  const count = (s) => news.items.filter((n) => n.source === s).length;
+  const chip = (id, label, n) =>
+    `<button type="button" class="chip ${news.filter === id ? 'active' : ''}" data-news-filter="${id}" aria-pressed="${news.filter === id}">${label} <span>${n}</span></button>`;
+
+  return `
+    ${head}
+    ${news.stale ? `<div class="notice" role="status">Mostrando noticias guardadas: no se pudieron actualizar (${esc(news.error || 'error')}).</div>` : ''}
+    ${failed.length && !news.stale ? `<div class="notice" role="status">No se pudo cargar ${esc(failed.join(' ni '))} por ahora; se muestran las demás fuentes.</div>` : ''}
+    <div class="chips" role="group" aria-label="Filtrar noticias">
+      ${chip('all', 'Todas', news.items.length)}
+      ${chip('HLTV', 'HLTV', count('HLTV'))}
+      ${chip('Steam', 'Actualizaciones de CS2', count('Steam'))}
+    </div>
+    ${shown.length ? `<div class="news-grid">${shown.map(newsCard).join('')}</div>` : emptyState('Sin noticias', 'Esta fuente no tiene novedades por ahora.')}
+    <p class="footnote">Titulares de HLTV.org y anuncios oficiales de Valve en Steam. Cada nota abre en su fuente original.</p>`;
 }
 
 function viewSearch() {
@@ -345,10 +436,13 @@ function render() {
     else t.removeAttribute('aria-current');
   });
 
-  app.setAttribute('aria-busy', String(state.status === 'loading'));
+  if (route === 'noticias' && !state.query && state.news.status === 'idle') loadNews();
+
+  const busy = route === 'noticias' ? state.news.status === 'loading' : state.status === 'loading';
+  app.setAttribute('aria-busy', String(busy));
   app.innerHTML = state.query
     ? viewSearch()
-    : { partidos: viewPartidos, calendario: viewCalendario, equipos: viewEquipos }[route]();
+    : { partidos: viewPartidos, calendario: viewCalendario, equipos: viewEquipos, noticias: viewNoticias }[route]();
 }
 
 // ===================== MODAL =====================
@@ -357,9 +451,9 @@ function findMatch(id) {
   return [...state.live, ...state.upcoming, ...state.past].find((m) => m.id === id);
 }
 
-function formList(team) {
+function formList(team, n = 5) {
   if (!team.id) return '<p class="muted small">Equipo por definir</p>';
-  const rec = recentRecord(state.stats, team.id, 5);
+  const rec = recentRecord(state.stats, team.id, n);
   if (!rec.n) return '<p class="muted small">Sin partidos recientes en los datos</p>';
   return `<ul class="form-list">${rec.history.map((r) => `
     <li><span class="fd ${r.result}"></span><span class="fl-opp">vs ${esc(r.opponent)}</span><span class="fl-score">${esc(r.score)}</span></li>`).join('')}</ul>`;
@@ -397,12 +491,12 @@ function openMatch(id) {
       <div class="md-sub">${esc([m.serie, m.stage, m.format].filter(Boolean).join(' · '))}</div>
     </div>
     <div class="md-teams">
-      <div class="md-team">${teamLogo(m.teamA, 'lg')}<span>${esc(m.teamA.name)}</span></div>
+      ${mdTeam(m.teamA)}
       <div class="md-score">
         ${m.status === 'live' || m.status === 'finished' ? `<strong>${m.scoreA} – ${m.scoreB}</strong>` : '<strong class="muted">vs</strong>'}
         <span class="${m.status === 'live' ? 'live-text' : 'muted'}">${esc(statusText)}</span>
       </div>
-      <div class="md-team">${teamLogo(m.teamB, 'lg')}<span>${esc(m.teamB.name)}</span></div>
+      ${mdTeam(m.teamB)}
     </div>
     ${predHtml ? `<h3 class="section-label">Predicción por forma reciente</h3>${predHtml}` : ''}
     <h3 class="section-label">Últimos 5 partidos</h3>
@@ -416,9 +510,71 @@ function openMatch(id) {
         const w = x.draw ? 'Empate' : x.winner === 'A' ? x.teamA.name : x.winner === 'B' ? x.teamB.name : '—';
         return `<li><span class="muted">${esc(formatShortDate(x.date))} · ${esc(x.league)}</span><span><strong>${esc(w)}</strong> ${x.scoreA}–${x.scoreB}</span></li>`;
       }).join('')}</ul>` : ''}
+    ${m.teamA.id || m.teamB.id ? `
+      <h3 class="section-label">Planteles</h3>
+      <div class="md-forms">
+        ${[m.teamA, m.teamB].map((t) => `<div><div class="md-form-title">${esc(t.name)}</div>${rosterSlot(t)}</div>`).join('')}
+      </div>` : ''}
     ${stream && m.status !== 'finished' ? `<a class="btn block" href="${esc(stream)}" target="_blank" rel="noopener noreferrer">Ver transmisión ↗</a>` : ''}`;
 
-  modal.showModal();
+  showModal();
+  ensureRosters([m.teamA.id, m.teamB.id]);
+}
+
+function mdTeam(team) {
+  const inner = `${teamLogo(team, 'lg')}<span>${esc(team.name)}</span>`;
+  return team.id
+    ? `<button type="button" class="md-team team-link" data-team="${team.id}" aria-label="Ver equipo ${esc(team.name)}">${inner}</button>`
+    : `<div class="md-team">${inner}</div>`;
+}
+
+function rosterSlot(team) {
+  if (!team.id) return '<p class="muted small">Equipo por definir</p>';
+  return `<div data-roster="${team.id}">${rosterGrid(state.rosters.get(team.id))}</div>`;
+}
+
+function findTeam(id) {
+  if (state.stats.has(id)) return state.stats.get(id).team;
+  for (const m of [...state.live, ...state.upcoming, ...state.past]) {
+    if (m.teamA.id === id) return m.teamA;
+    if (m.teamB.id === id) return m.teamB;
+  }
+  return null;
+}
+
+function openTeam(id) {
+  const team = findTeam(id);
+  if (!team) return;
+  const rec = recentRecord(state.stats, id);
+  const next = [...state.live, ...state.upcoming].filter((m) => m.teamA.id === id || m.teamB.id === id).slice(0, 5);
+
+  modalBody.innerHTML = `
+    <div class="team-head">
+      ${teamLogo(team, 'lg')}
+      <div>
+        <div class="eyebrow">Equipo</div>
+        <h2 class="team-title">${esc(team.name)}</h2>
+        <div class="md-sub">${rec.n ? `${rec.wins}–${rec.losses}${rec.draws ? `–${rec.draws}` : ''} en sus últimos ${rec.n} · ${Math.round((rec.wins / rec.n) * 100)}% de victorias` : 'Sin resultados recientes en los datos'}</div>
+      </div>
+    </div>
+    <h3 class="section-label">Plantel</h3>
+    ${rosterSlot(team)}
+    ${next.length ? `
+      <h3 class="section-label">Próximos partidos</h3>
+      <ul class="h2h">${next.map((m) => {
+        const rival = m.teamA.id === id ? m.teamB : m.teamA;
+        return `<li><button type="button" class="row-link" data-match="${m.id}"><span>vs <strong>${esc(rival.name)}</strong></span><span class="muted">${m.status === 'live' ? 'En vivo' : esc(whenLabel(m.date))}</span></button></li>`;
+      }).join('')}</ul>` : ''}
+    <h3 class="section-label">Últimos resultados</h3>
+    ${formList(team, 10)}`;
+
+  showModal();
+  ensureRosters([id]);
+}
+
+function showModal() {
+  if (!modal.open) modal.showModal();
+  modal.scrollTop = 0;
 }
 
 // ===================== EVENTOS =====================
@@ -427,14 +583,27 @@ document.addEventListener('click', (e) => {
   const matchEl = e.target.closest('[data-match]');
   if (matchEl) return openMatch(Number(matchEl.dataset.match));
 
+  const teamEl = e.target.closest('[data-team]');
+  if (teamEl) return openTeam(Number(teamEl.dataset.team));
+
   const filterEl = e.target.closest('[data-filter]');
   if (filterEl) {
     state.filter = filterEl.dataset.filter;
     return render();
   }
 
+  const newsFilterEl = e.target.closest('[data-news-filter]');
+  if (newsFilterEl) {
+    state.news.filter = newsFilterEl.dataset.newsFilter;
+    return render();
+  }
+
   const action = e.target.closest('[data-action]')?.dataset.action;
   if (action === 'retry' || action === 'refresh') return load({ force: true });
+  if (action === 'refresh-news') {
+    loadNews({ force: true });
+    return render();
+  }
   if (action === 'close-modal') return modal.close();
 
   if (e.target.closest('.tab, .logo') && state.query) {

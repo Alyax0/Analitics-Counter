@@ -8,7 +8,9 @@ Partidos de Counter-Strike 2 en vivo, calendario y una predicción simple basada
 - **Calendario:** próximos partidos agrupados por día, en la zona horaria de quien visita.
 - **Equipos en forma:** % de victorias en los últimos 10 partidos, calculado sobre los resultados recientes más el historial de los equipos que juegan pronto.
 - **Modo demo:** si la API no responde, se cargan datos reales capturados en `data/demo.json`, con un aviso. Con `?demo` en la URL se fuerza ese modo.
-- **Detalle de partido:** forma de cada equipo, cruces recientes y enlace a la transmisión.
+- **Detalle de partido:** forma de cada equipo, cruces recientes, planteles y enlace a la transmisión.
+- **Ficha de equipo:** plantel con nacionalidad y edad, próximos partidos y últimos 10 resultados.
+- **Noticias:** titulares de HLTV (RSS) y notas de parche oficiales de Valve (API de noticias de Steam), con enlace a la fuente original.
 
 ### Cómo se calcula la predicción
 
@@ -28,7 +30,10 @@ js/model.js       normalización de partidos, forma y predicción
 js/ui.js          formato y componentes HTML
 js/app.js         estado, vistas, ruteo por hash y eventos
 api/ps.js         proxy serverless a PandaScore
+api/news.js       noticias de HLTV y Steam, con caché de 15 min en el CDN
 ```
+
+> Las estadísticas individuales de jugadores (K/D, ADR, rating) no están en el plan gratuito de PandaScore, así que la página no las muestra.
 
 ## Correrlo localmente
 

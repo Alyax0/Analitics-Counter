@@ -129,6 +129,25 @@ export function predict(match, stats) {
   };
 }
 
+// Plantel de un equipo (/teams). Solo jugadores activos.
+export function normalizeRoster(t) {
+  return {
+    id: t.id,
+    players: (t.players || [])
+      .filter((p) => p.active !== false)
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        fullName: [p.first_name, p.last_name].filter(Boolean).join(' '),
+        nationality: p.nationality || null,
+        age: p.age || null,
+        role: p.role || null,
+        photo: p.image_url || null,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+  };
+}
+
 export function headToHead(finished, idA, idB) {
   return finished
     .filter(

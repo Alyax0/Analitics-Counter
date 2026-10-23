@@ -3,7 +3,7 @@
 //
 // Uso: /api/ps?game=csgo&path=matches/upcoming&per_page=50&sort=begin_at
 // Solo se aceptan los juegos, rutas y parámetros de las listas de abajo.
-// Los filtros van con nombres planos (status, opponents) y acá se traducen
+// Los filtros van con nombres planos (status, opponents, ids) y acá se traducen
 // a la sintaxis filter[...] de PandaScore.
 
 const GAMES = new Set(['csgo']);
@@ -13,6 +13,7 @@ const PATHS = {
   'matches/running': 60,
   'matches/upcoming': 300,
   'matches/past': 300,
+  teams: 3600, // planteles: cambian poco
 };
 
 const SORTS = new Set(['begin_at', '-begin_at', 'scheduled_at', '-scheduled_at']);
@@ -35,6 +36,10 @@ function buildParams(query) {
     // Lista de ids de equipos separados por coma, hasta 50
     if (!/^\d+(,\d+){0,49}$/.test(query.opponents)) return null;
     params.set('filter[opponent_id]', query.opponents);
+  }
+  if (query.ids) {
+    if (!/^\d+(,\d+){0,49}$/.test(query.ids)) return null;
+    params.set('filter[id]', query.ids);
   }
   return params;
 }
