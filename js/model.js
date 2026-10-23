@@ -64,6 +64,9 @@ export function normalizeMatch(m) {
     scoreA: scoreOf(teamA),
     scoreB: scoreOf(teamB),
     winner: winnerId == null ? null : winnerId === teamA.id ? 'A' : winnerId === teamB.id ? 'B' : null,
+    winnerId,
+    // Inicio real: en partidos sin empezar, begin_at trae el horario programado
+    startedAt: (m.status === 'running' || m.status === 'finished') && m.begin_at ? new Date(m.begin_at) : null,
     draw: !!m.draw,
     forfeit: !!m.forfeit,
     stream: mainStream(m),

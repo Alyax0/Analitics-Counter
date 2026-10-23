@@ -165,6 +165,7 @@ main.container { flex: 1; }
 /* ---------- Tabla de equipos ---------- */
 .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
 table.teams { width: 100%; border-collapse: collapse; min-width: 520px; }
+table.teams.compact { min-width: 0; }
 .teams th { text-align: left; padding: 12px 16px; font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; border-bottom: 1px solid var(--border2); }
 .teams td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
 .teams tr:last-child td { border-bottom: none; }
@@ -206,6 +207,19 @@ table.teams { width: 100%; border-collapse: collapse; min-width: 520px; }
 .news-summary { font-size: 13px; color: var(--muted); line-height: 1.5; }
 .news-link { margin-top: auto; padding-top: 4px; font-size: 12px; font-weight: 600; color: var(--accent); }
 .news-grid .skeleton-card { border-radius: var(--radius); }
+
+/* ---------- Aciertos ---------- */
+.pred-list { list-style: none; display: flex; flex-direction: column; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.pred-row { display: grid; grid-template-columns: 64px minmax(0, 1fr) 52px minmax(0, 170px); gap: 14px; align-items: center; padding: 12px 18px; background: var(--surface); font-size: 13px; }
+.pred-match { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pred-match strong { color: var(--text); }
+.pred-league { display: block; font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pred-prob { font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.pred-outcome { text-align: right; font-size: 12px; }
+.ok { color: var(--green); font-weight: 600; }
+.ko { color: var(--red); font-weight: 600; }
+.footnote a { color: var(--muted); }
+.footnote code { font-size: 11px; }
 
 /* ---------- Estados ---------- */
 .state { background: var(--surface); border: 1px dashed var(--border2); border-radius: var(--radius); padding: 40px 24px; text-align: center; color: var(--muted); }
@@ -272,6 +286,9 @@ table.teams { width: 100%; border-collapse: collapse; min-width: 520px; }
   .md-forms { grid-template-columns: 1fr; }
   .news-grid { grid-template-columns: 1fr; }
   .roster { grid-template-columns: 1fr 1fr; }
+  .pred-row { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px 14px; }
+  .pred-date { display: none; }
+  .pred-outcome { grid-column: 1 / -1; text-align: left; }
   .logo-badge.lg { width: 44px; height: 44px; }
 }
 @media (prefers-reduced-motion: reduce) {
