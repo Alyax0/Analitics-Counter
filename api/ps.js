@@ -1,19 +1,68 @@
+// Proxy a PandaScore. El token vive en la variable de entorno PANDASCORE_TOKEN
+// (Vercel → Settings → Environment Variables) y nunca llega al navegador.
+//
+// Uso: /api/ps?game=csgo&path=matches/upcoming&per_page=50&sort=begin_at
+// Solo se aceptan los juegos, rutas y parámetros de las listas de abajo.
+
+const GAMES = new Set(['csgo']);
+
+// ruta → segundos de caché en el CDN de Vercel
+const PATHS = {
+  'matches/running': 60,
+  'matches/upcoming': 300,
+  'matches/past': 300,
+};
+
+const SORTS = new Set(['begin_at', '-begin_at', 'scheduled_at', '-scheduled_at']);
+
+function buildParams(query) {
+  const params = new URLSearchParams();
+  const perPage = parseInt(query.per_page, 10);
+  if (perPage) params.set('per_page', String(Math.min(Math.max(perPage, 1), 100)));
+  const page = parseInt(query.page, 10);
+  if (page) params.set('page', String(Math.min(Math.max(page, 1), 10)));
+  if (query.sort) {
+    if (!SORTS.has(query.sort)) return null;
+    params.set('sort', query.sort);
+  }
+  return params;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
 
-  const endpoint = req.query.endpoint;
-  if (!endpoint) return res.status(400).json({ error: 'Missing endpoint' });
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Método no permitido' });
 
-  const TOKEN = 'PXUwtDI-FzjMA9nRKnPNJxwaCGSugwA_mpjCE4hM_kzO5GHT3IU';
-  const url = `https://api.pandascore.co${endpoint}&token=${TOKEN}`;
+  const { game, path } = req.query;
+  if (!GAMES.has(game) || !(path in PATHS)) {
+    return res.status(400).json({ error: 'Juego o ruta no permitidos' });
+  }
+  const params = buildParams(req.query);
+  if (!params) return res.status(400).json({ error: 'Parámetro sort no permitido' });
+
+  const token = process.env.PANDASCORE_TOKEN;
+  if (!token) return res.status(500).json({ error: 'Falta configurar PANDASCORE_TOKEN' });
+
+  const url = `https://api.pandascore.co/${game}/${path}?${params}`;
 
   try {
-    const response = await fetch(url);
-    const data = await response.json();
-    res.setHeader('Cache-Control', 's-maxage=300'); // cache 5 min en Vercel
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    });
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      const message = (data && (data.error || data.message)) || `PandaScore respondió ${response.status}`;
+      // 401/403 son problemas de configuración nuestros, no del cliente
+      const status = response.status === 401 || response.status === 403 ? 502 : response.status;
+      return res.status(status).json({ error: message });
+    }
+
+    const ttl = PATHS[path];
+    res.setHeader('Cache-Control', `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 4}`);
     return res.status(200).json(data);
   } catch (e) {
-    return res.status(500).json({ error: e.message });
+    return res.status(502).json({ error: 'No se pudo contactar a PandaScore' });
   }
 }
