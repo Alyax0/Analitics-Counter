@@ -1,0 +1,11 @@
+{
+  "name": "analitics-counter",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
