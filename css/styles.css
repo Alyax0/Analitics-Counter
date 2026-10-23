@@ -41,6 +41,10 @@ button { font: inherit; color: inherit; }
 .topbar-inner { max-width: 1100px; margin: 0 auto; padding: 0 40px; height: 60px; display: flex; align-items: center; gap: 24px; }
 .logo { font-size: 16px; font-weight: 700; letter-spacing: .05em; text-decoration: none; flex-shrink: 0; }
 .logo em { color: var(--accent); font-style: normal; }
+.game-switch { display: flex; padding: 3px; gap: 2px; background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; flex-shrink: 0; }
+.game-opt { padding: 4px 10px; border-radius: 5px; font-size: 12px; font-weight: 600; color: var(--muted); text-decoration: none; transition: color .15s, background .15s; }
+.game-opt:hover { color: var(--text); }
+.game-opt.active { background: var(--accent-dim); color: var(--accent); }
 .tabs { display: flex; gap: 2px; flex: 1; }
 .tab { padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--muted); text-decoration: none; white-space: nowrap; transition: color .15s, background .15s; }
 .tab:hover { color: var(--text); background: var(--surface); }
@@ -254,7 +258,8 @@ table.teams { width: 100%; border-collapse: collapse; min-width: 520px; }
 }
 @media (max-width: 600px) {
   .heading { font-size: 26px; }
-  .tabs { overflow-x: auto; scrollbar-width: none; flex: 1 1 auto; justify-content: flex-start; }
+  .game-switch { margin-left: auto; }
+  .tabs { order: 2; flex-basis: 100%; overflow-x: auto; scrollbar-width: none; justify-content: flex-start; }
   .tabs::-webkit-scrollbar { display: none; }
   .tab { padding: 6px 10px; }
   .stat-item { padding: 16px; }

@@ -1,10 +1,12 @@
-// Noticias de CS2: titulares de HLTV (RSS) y actualizaciones oficiales de
-// Valve (API de noticias de Steam). Solo se devuelven título, resumen corto,
-// fecha y enlace a la fuente original.
+// Noticias por juego (?game=cs2|valorant):
+// - CS2: titulares de HLTV (RSS) y notas de parche oficiales de Valve (Steam)
+// - Valorant: titulares de VLR.gg (RSS)
+// Solo se devuelven título, resumen corto, fecha y enlace a la fuente original.
 //
-// Cada fuente es independiente: si una falla, se devuelve la otra.
+// Cada fuente es independiente: si una falla, se devuelven las demás.
 
 const HLTV_RSS = 'https://www.hltv.org/rss/news';
+const VLR_RSS = 'https://www.vlr.gg/rss';
 const STEAM_NEWS =
   'https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=730&count=10&feeds=steam_community_announcements';
 const TIMEOUT_MS = 6000;
@@ -53,16 +55,17 @@ async function fetchText(url) {
   return res.text();
 }
 
-async function hltv() {
-  const xml = await fetchText(HLTV_RSS);
+// RSS genérico: solo se aceptan enlaces del sitio de origen
+async function rss(feedUrl, source, origin, limit = 10) {
+  const xml = await fetchText(feedUrl);
   const items = [];
   for (const [, body] of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
     const tag = (name) => decode((body.match(new RegExp(`<${name}>([\\s\\S]*?)</${name}>`)) || [])[1] || '');
     const url = tag('link');
     const date = new Date(tag('pubDate'));
-    if (!url.startsWith('https://www.hltv.org/') || isNaN(date)) continue;
+    if (!url.startsWith(origin) || isNaN(date)) continue;
     items.push({
-      source: 'HLTV',
+      source,
       kind: 'Noticia',
       title: tag('title'),
       summary: shorten(tag('description')),
@@ -71,8 +74,11 @@ async function hltv() {
     });
   }
   if (!items.length) throw new Error('RSS sin noticias');
-  return items;
+  return items.slice(0, limit);
 }
+
+const hltv = () => rss(HLTV_RSS, 'HLTV', 'https://www.hltv.org/');
+const vlr = () => rss(VLR_RSS, 'VLR', 'https://www.vlr.gg/', 20);
 
 async function steam() {
   const data = JSON.parse(await fetchText(STEAM_NEWS));
@@ -89,18 +95,25 @@ async function steam() {
     }));
 }
 
+// Fuentes por juego; la clave es el nombre que ve el usuario
+const SOURCES = {
+  cs2: { HLTV: hltv, Steam: steam },
+  valorant: { VLR: vlr },
+};
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method !== 'GET') return res.status(405).json({ error: 'Método no permitido' });
 
-  const [h, s] = await Promise.allSettled([hltv(), steam()]);
-  const items = [...(h.status === 'fulfilled' ? h.value : []), ...(s.status === 'fulfilled' ? s.value : [])].sort(
-    (a, b) => b.date.localeCompare(a.date),
-  );
-  const sources = {
-    hltv: h.status === 'fulfilled' ? 'ok' : 'error',
-    steam: s.status === 'fulfilled' ? 'ok' : 'error',
-  };
+  const fetchers = SOURCES[req.query.game || 'cs2'];
+  if (!fetchers) return res.status(400).json({ error: 'Juego no permitido' });
+
+  const names = Object.keys(fetchers);
+  const results = await Promise.allSettled(names.map((n) => fetchers[n]()));
+  const items = results
+    .flatMap((r) => (r.status === 'fulfilled' ? r.value : []))
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const sources = Object.fromEntries(names.map((n, i) => [n, results[i].status === 'fulfilled' ? 'ok' : 'error']));
 
   if (!items.length) return res.status(502).json({ error: 'No se pudieron cargar las noticias', sources });
 
