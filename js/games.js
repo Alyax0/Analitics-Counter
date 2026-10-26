@@ -8,7 +8,7 @@ export const GAMES = {
     slug: 'csgo', // PandaScore mantiene el slug "csgo" para CS2
     brand: 'CS2',
     name: 'Counter-Strike 2',
-    accent: '#f97316',
+    accent: '#f5c542',
     demoFile: 'data/demo.json',
     newsSources: ['HLTV', 'Steam'],
   },
@@ -26,7 +26,7 @@ export const GAMES = {
     slug: 'ow',
     brand: 'OW',
     name: 'Overwatch',
-    accent: '#3ea8ff', // provisorio: el naranja oficial choca con el de CS2
+    accent: '#f99e1a',
     demoFile: 'data/demo-overwatch.json',
     newsSources: ['Steam', 'Dexerto'],
   },
