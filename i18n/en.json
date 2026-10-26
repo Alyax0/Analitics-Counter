@@ -1,0 +1,296 @@
+{
+  "meta": {
+    "title": "{brand} · {game}: matches and predictions"
+  },
+  "nav": {
+    "inicio": "Home",
+    "partidos": "Matches",
+    "calendario": "Schedule",
+    "equipos": "Teams",
+    "noticias": "News",
+    "aciertos": "Accuracy",
+    "live": "Live",
+    "liveAria": { "one": "{n} live match", "other": "{n} live matches" },
+    "noLive": "No live matches",
+    "game": "Game",
+    "sections": "Sections",
+    "language": "Language",
+    "search": "Search team or league",
+    "searchPlaceholder": "Search team or league...",
+    "close": "Close",
+    "matchDetail": "Match details"
+  },
+  "footer": {
+    "data": "Data from {link}. Predictions are statistical estimates for demonstration purposes, not betting advice."
+  },
+  "common": {
+    "retry": "Retry",
+    "refresh": "Refresh",
+    "refreshData": "Refresh data",
+    "updated": "Updated {ago}",
+    "demoData": "Demo data",
+    "noData": "No data",
+    "tbd": "TBD",
+    "tournament": "Tournament",
+    "maps": { "one": "{n} map", "other": "{n} maps" },
+    "toConfirm": "TBC",
+    "dateToConfirm": "Date TBC",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "secondsAgo": "a few seconds ago",
+    "minutesAgo": "{n} min ago",
+    "hoursAgo": "{n} h ago",
+    "unknownError": "unknown error"
+  },
+  "notices": {
+    "demo": "<strong>Demo mode:</strong> real PandaScore data captured on {date}; it does not update.",
+    "demoLive": "See live data",
+    "apiDown": "The API is not available right now.",
+    "stale": "Showing saved data: the API did not respond ({error})."
+  },
+  "errors": {
+    "matches": "We couldn't load the matches",
+    "news": "We couldn't load the news",
+    "history": "We couldn't load the history",
+    "roster": "Couldn't load the roster.",
+    "demo": "Couldn't load demo mode ({status})",
+    "unexpected": "Unexpected API response",
+    "status": "Error {status}"
+  },
+  "conf": {
+    "alta": "high",
+    "media": "medium",
+    "baja": "low",
+    "label": { "alta": "High", "media": "Medium", "baja": "Low" }
+  },
+  "match": {
+    "liveMap": "Live · Map {cur}/{total}",
+    "finished": "Finished · {date}",
+    "canceled": "Canceled",
+    "postponed": "Postponed",
+    "forfeit": "Won by forfeit",
+    "draw": "Draw",
+    "won": "{team} won",
+    "tbdTeams": "Opponents TBD",
+    "insufficient": "Not enough data to predict",
+    "favorite": "Favorite: <strong>{team}</strong>",
+    "even": "Even",
+    "confidence": "{level} confidence",
+    "aria": "{a} vs {b}, {league}. See details",
+    "probAria": "Estimated probability: {a} {pa}%, {b} {pb}%",
+    "win": "Win",
+    "loss": "Loss"
+  },
+  "roster": {
+    "none": "PandaScore doesn't have this team's roster.",
+    "age": { "one": "{n} year old", "other": "{n} years old" }
+  },
+  "news": {
+    "read": "Read on {source} ↗",
+    "kind": { "news": "News", "update": "Update" },
+    "title": "News",
+    "accent": "& updates",
+    "refreshAria": "Refresh news",
+    "stale": "Showing saved news: they couldn't be updated ({error}).",
+    "failed": "Couldn't load {sources} right now; showing the other sources.",
+    "filterAria": "Filter news",
+    "all": "All",
+    "emptyTitle": "No news",
+    "emptyText": "This source has nothing new right now.",
+    "footnote": "Each story opens at its original source.",
+    "games": {
+      "cs2": {
+        "eyebrow": "HLTV and Valve",
+        "footnote": "Headlines from HLTV.org and official Valve announcements on Steam.",
+        "sources": { "HLTV": "HLTV", "Steam": "CS2 updates" }
+      },
+      "valorant": {
+        "eyebrow": "VLR.gg",
+        "footnote": "Headlines from VLR.gg.",
+        "sources": { "VLR": "VLR.gg" }
+      }
+    }
+  },
+  "partidos": {
+    "title": "Matches",
+    "accent": "live and upcoming",
+    "stats": {
+      "live": "Live",
+      "liveSub": "matches now",
+      "next24": "Next 24 h",
+      "next24Sub": "scheduled matches",
+      "leagues": "Active leagues",
+      "leaguesSub": "live or within 24 h",
+      "withPred": "With prediction",
+      "withPredSub": "upcoming with data"
+    },
+    "filterAria": "Filter matches",
+    "chips": { "all": "All", "live": "Live", "upcoming": "Upcoming", "finished": "Finished" },
+    "empty": {
+      "all": { "title": "No matches", "text": "PandaScore didn't return any matches right now." },
+      "live": { "title": "No live matches", "text": "Check the upcoming matches or the full schedule." },
+      "upcoming": { "title": "No scheduled matches", "text": "Check back later." },
+      "finished": { "title": "No recent results", "text": "There are no finished matches to show." }
+    },
+    "footnote": "Prediction: each team's win rate over its last 10 matches (Laplace smoothing), based on {n} loaded results (the most recent ones plus the history of teams playing soon). It's a simple model for demonstration purposes."
+  },
+  "calendario": {
+    "eyebrow": "Upcoming matches",
+    "title": "Schedule",
+    "emptyTitle": "Empty schedule",
+    "emptyText": "There are no scheduled matches right now.",
+    "liveNow": "Live now"
+  },
+  "equipos": {
+    "eyebrow": "Latest results",
+    "title": "Teams",
+    "accent": "in form",
+    "emptyTitle": "No data",
+    "emptyText": "There aren't enough results to build the table yet.",
+    "lead": "Teams with at least 5 matches among the {n} loaded results (the most recent ones plus the history of teams playing soon), sorted by win rate over their last 10. Not an official ranking.",
+    "col": { "team": "Team", "wl": "W–L", "pct": "Win %", "form": "Form" }
+  },
+  "aciertos": {
+    "eyebrow": "Verifiable history",
+    "title": "Model",
+    "accent": "accuracy",
+    "lastChange": "Last change {ago}",
+    "notStartedTitle": "The log hasn't started yet",
+    "notStartedText": "The first automatic run creates the history. Check back in a while.",
+    "footnote": "Each prediction is saved a few hours before the match and never changed afterwards; if it was saved after the start, it's voided. Canceled matches, forfeits and draws don't count. Model {model}. The whole log is in the {link}.",
+    "footnoteLink": "history of the data branch on GitHub ↗",
+    "noGameTitle": "No {game} predictions yet",
+    "noGameText": "They're logged automatically a few hours before each match.",
+    "stats": {
+      "accuracy": "Accuracy",
+      "accuracySub": "{correct} of {decided} with a favorite",
+      "resolved": "Resolved",
+      "resolvedSub": "since {date}",
+      "brier": "Brier score",
+      "brierSub": "lower is better · random: 0.250",
+      "pending": "Pending",
+      "pendingSub": "awaiting result"
+    },
+    "noneResolved": "No predicted match has finished yet. The first results show up as soon as they end.",
+    "byConfidence": "By confidence level",
+    "col": { "confidence": "Confidence", "matches": "Matches", "hits": "Accuracy" },
+    "pendingTitle": "Upcoming (already saved)",
+    "recentTitle": "Latest resolved",
+    "row": {
+      "void": "Doesn't count · {reason}",
+      "even": "Even",
+      "hit": "✓ Correct",
+      "miss": "✗ Wrong",
+      "league": "{league} · {level} confidence"
+    },
+    "reasons": {
+      "canceled": "canceled",
+      "late": "saved late",
+      "forfeit": "forfeit",
+      "draw": "draw",
+      "noWinner": "no winner",
+      "noResult": "no result"
+    }
+  },
+  "search": {
+    "eyebrow": "Search",
+    "title": "Results for",
+    "emptyTitle": "No results",
+    "emptyText": "Try another team or league name.",
+    "teams": "Teams",
+    "matches": "Matches"
+  },
+  "modal": {
+    "liveMap": "Live · map {cur} of {total}",
+    "insufficient": "Not enough recent matches from both teams to estimate (at least 3 each; there are {a} and {b}).",
+    "explain": "{a} won {wa} of its last {na}; {b} won {wb} of {nb}.",
+    "confidence": "Confidence",
+    "predTitle": "Prediction based on recent form",
+    "last5": "Last 5 matches",
+    "h2h": "Recent head-to-head",
+    "rosters": "Rosters",
+    "stream": "Watch stream ↗",
+    "tbdTeam": "Team TBD",
+    "noRecent": "No recent matches in the data",
+    "viewTeam": "See team {team}",
+    "team": "Team",
+    "record": "{wl} in their last {n} · {pct}% win rate",
+    "noResults": "No recent results in the data",
+    "roster": "Roster",
+    "next": "Upcoming matches",
+    "lastResults": "Latest results",
+    "live": "Live"
+  },
+  "home": {
+    "kicker": "Esports · {game}",
+    "lead": "Live matches, results and predictions <br>with real data, all in one place",
+    "facts": {
+      "live": "<strong>{n}</strong> live",
+      "today": { "one": "<strong>{n}</strong> match today", "other": "<strong>{n}</strong> matches today" },
+      "accuracy": "<strong>{pct}</strong> accuracy"
+    },
+    "featured": {
+      "badgeLive": "Live",
+      "badge": "Featured",
+      "descLive": "Being played now: map {cur} of {total}, {a}–{b}.",
+      "descFav": "The model picks {team} as the favorite at {pct}%, based on recent form.",
+      "descInsufficient": "There aren't enough matches yet to estimate who wins.",
+      "descEven": "The model sees it as even.",
+      "cta": "See match",
+      "ovHead": "{when} · recent form",
+      "noDataChip": "no data",
+      "confidence": "Confidence",
+      "aria": "See {a} vs {b}"
+    },
+    "form": {
+      "ovHead": "Last 10 matches · best current form",
+      "badge": "Form",
+      "meta": "Teams on a streak",
+      "title": "Who's in the best shape?",
+      "desc": "The teams with the best streak over their last 10 matches, computed from real results. Not an official ranking.",
+      "cta": "See teams",
+      "aria": "See teams in form"
+    },
+    "panel": {
+      "eyebrow": "Matches",
+      "title": "Competition today",
+      "sub": "What's being played now, what's next and how the latest matches ended",
+      "live": "Live now",
+      "next": "Upcoming matches",
+      "results": "Recent results",
+      "noLive": "No live matches.",
+      "nextAt": "Next one: {when}.",
+      "noNext": "No scheduled matches.",
+      "noResults": "No recent results."
+    },
+    "pred": {
+      "eyebrow": "Predictions",
+      "title": "How accurate is <span>the model?</span>",
+      "notStarted": "The log hasn't started yet.",
+      "loadError": "Couldn't load the history.",
+      "noGame": "No predictions logged for this game yet.",
+      "bigSub": "accuracy over {decided} resolved matches · {pending} pending",
+      "matches": { "one": "{n} match", "other": "{n} matches" }
+    },
+    "calendar": { "eyebrow": "Schedule", "title": "Coming up", "empty": "No scheduled matches.", "cta": "See schedule" },
+    "news": { "eyebrow": "News", "title": "Latest", "error": "Couldn't load the news.", "cta": "See news" },
+    "live": {
+      "eyebrowOn": "{n} live",
+      "eyebrowOff": "Not live",
+      "title": "Live",
+      "pillOn": { "one": "{n} match now", "other": "{n} matches now" },
+      "pillOff": "Nothing on right now",
+      "cta": "See matches"
+    },
+    "strip": {
+      "label": "Latest news",
+      "new": "New",
+      "all": "See all",
+      "prev": "Previous story",
+      "next": "Next story",
+      "item": "Story {n}",
+      "error": "Couldn't load the news."
+    },
+    "side": { "eyebrow": "Esports", "next": "Next match", "cta": "See details" }
+  }
+}

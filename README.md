@@ -43,12 +43,21 @@ js/api.js         cliente del proxy con caché en localStorage
 js/model.js       normalización de partidos, forma y predicción
 js/ui.js          formato y componentes HTML
 js/app.js         estado, vistas, ruteo por hash y eventos
+js/home.js        home de cada juego
+js/i18n.js        traducciones: t(clave), idioma guardado en el navegador
+i18n/*.json       textos de la interfaz en español e inglés
 api/ps.js         proxy serverless a PandaScore
 api/news.js       noticias por juego (HLTV, Steam, VLR.gg), con caché de 15 min
 scripts/          registro de predicciones (lo corre GitHub Actions)
 ```
 
 > Las estadísticas individuales de jugadores (K/D, ADR, rating) no están en el plan gratuito de PandaScore, así que la página no las muestra.
+
+## Idiomas
+
+Todos los textos de la interfaz están en `i18n/es.json` e `i18n/en.json`. El botón ES/EN de la barra cambia el idioma sin recargar y la elección se guarda en el navegador; en la primera visita se usa el idioma del navegador (español si no es ninguno de los dos). Las fechas y horas siguen el idioma elegido. Los titulares de noticias quedan en el idioma de su fuente.
+
+Para agregar un texto: sumar la clave en los dos archivos y usar `t('seccion.clave')` en el código.
 
 ## Correrlo localmente
 

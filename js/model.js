@@ -11,9 +11,17 @@ const STATUS = {
 const FORM_WINDOW = 10; // partidos que se usan para la predicción
 const MIN_SAMPLE = 3; // mínimo de partidos por equipo para predecir
 
+// Textos que genera la normalización. La página los reemplaza por los del
+// idioma elegido; el script de predicciones (Node) usa estos por defecto.
+export const LABELS = {
+  tbd: 'Por definir',
+  tournament: 'Torneo',
+  maps: (n) => (n === 1 ? '1 mapa' : `${n} mapas`),
+};
+
 function toTeam(opponent) {
   const t = opponent && opponent.opponent;
-  if (!t) return { id: null, name: 'Por definir', acronym: 'TBD', logo: null, location: null };
+  if (!t) return { id: null, name: LABELS.tbd, acronym: 'TBD', logo: null, location: null };
   return {
     id: t.id,
     name: t.name,
@@ -27,7 +35,7 @@ function formatLabel(m) {
   const n = m.number_of_games || 1;
   if (m.match_type === 'best_of') return `BO${n}`;
   if (m.match_type === 'first_to') return `FT${n}`;
-  return n === 1 ? '1 mapa' : `${n} mapas`;
+  return LABELS.maps(n);
 }
 
 function mainStream(m) {
@@ -52,7 +60,7 @@ export function normalizeMatch(m) {
     id: m.id,
     status: STATUS[m.status] || 'upcoming',
     date: date ? new Date(date) : null,
-    league: (m.league && m.league.name) || 'Torneo',
+    league: (m.league && m.league.name) || LABELS.tournament,
     serie: (m.serie && (m.serie.full_name || m.serie.name)) || '',
     stage: (m.tournament && m.tournament.name) || '',
     tier: (m.tournament && m.tournament.tier) || null,

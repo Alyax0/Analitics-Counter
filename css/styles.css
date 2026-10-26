@@ -42,22 +42,26 @@ button { font: inherit; color: inherit; }
 
 /* ---------- Topbar ---------- */
 .topbar { position: sticky; top: 0; z-index: 50; background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
-.topbar-inner { max-width: 1240px; margin: 0 auto; padding: 0 32px; height: 64px; display: flex; align-items: center; gap: 14px; }
+.topbar-inner { max-width: 1320px; margin: 0 auto; padding: 0 32px; height: 64px; display: flex; align-items: center; gap: 10px; }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; flex-shrink: 0; color: var(--text); }
 .brand-mark { display: inline-flex; color: var(--accent); }
-.brand-name { font-family: var(--font-display); font-stretch: 125%; font-weight: 900; font-size: 15px; letter-spacing: .02em; text-transform: uppercase; white-space: nowrap; }
+.brand-name { font-family: var(--font-display); font-stretch: 125%; font-weight: 900; font-size: 14px; letter-spacing: .02em; text-transform: uppercase; white-space: nowrap; }
 .brand-tag { font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: .12em; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 2px 7px; }
 .live-pill { display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border2); font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: border-color .15s, color .15s; }
 .live-pill .live-dot { background: var(--muted2); animation: none; }
 .live-pill.on { color: var(--green); border-color: color-mix(in srgb, var(--green) 45%, transparent); background: color-mix(in srgb, var(--green) 8%, transparent); }
 .live-pill.on .live-dot { background: var(--green); animation: pulse 1.4s ease-in-out infinite; }
 .live-count { font-variant-numeric: tabular-nums; }
+.lang-switch { display: flex; flex-shrink: 0; padding: 3px; gap: 2px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border2); }
+.lang-opt { padding: 4px 9px; border: none; border-radius: 999px; background: none; cursor: pointer; font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--muted); transition: color .15s, background .15s; }
+.lang-opt:hover { color: var(--text); }
+.lang-opt[aria-pressed="true"] { background: var(--surface-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--border2); }
 .game-switch { display: flex; padding: 3px; gap: 2px; background: var(--surface); border: 1px solid var(--border2); border-radius: 999px; flex-shrink: 0; }
 .game-opt { padding: 4px 11px; border-radius: 999px; font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--muted); text-decoration: none; transition: color .15s, background .15s; }
 .game-opt:hover { color: var(--text); }
 .game-opt.active { background: var(--accent); color: #0b0b0d; }
 .tabs { display: flex; gap: 2px; flex: 1; justify-content: center; min-width: 0; }
-.tab { position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 8px 12px; border-radius: 999px; font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-decoration: none; white-space: nowrap; transition: color .15s, background .15s; }
+.tab { position: relative; display: inline-flex; align-items: center; gap: 5px; padding: 8px 8px; border-radius: 999px; font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-decoration: none; white-space: nowrap; transition: color .15s, background .15s; }
 .tab-icon { display: inline-flex; color: var(--muted2); transition: color .15s; }
 .tab:hover { color: var(--text); }
 .tab:hover .tab-icon { color: var(--accent); }
@@ -67,7 +71,7 @@ button { font: inherit; color: inherit; }
 .tab.has-new .tab-dot { display: inline-block; }
 .search-toggle { flex-shrink: 0; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; border: 1px solid var(--border2); background: var(--surface); color: var(--muted); cursor: pointer; }
 .search-toggle:hover, .search-toggle[aria-expanded="true"] { color: var(--accent); border-color: var(--accent); }
-.search-row { max-width: 1240px; margin: 0 auto; padding: 0 32px 12px; }
+.search-row { max-width: 1320px; margin: 0 auto; padding: 0 32px 12px; }
 .search-row[hidden] { display: none; }
 .search-bar { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border2); border-radius: 999px; padding: 9px 16px; width: 100%; transition: border-color .2s; }
 .search-bar:focus-within { border-color: var(--accent); }
@@ -279,7 +283,7 @@ table.teams.compact { min-width: 0; }
 .h2h li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; background: var(--bg); border-radius: 6px; font-size: 12px; }
 
 /* ---------- Responsive ---------- */
-@media (max-width: 1180px) {
+@media (max-width: 1340px) {
   .topbar-inner { height: auto; padding: 10px 24px; flex-wrap: wrap; gap: 10px 12px; }
   .game-switch { margin-left: auto; }
   .tabs { order: 5; flex-basis: 100%; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; margin: 0 -6px; }
@@ -303,6 +307,10 @@ table.teams.compact { min-width: 0; }
   .brand-tag { display: none; }
   .game-opt { padding: 4px 9px; }
   .search-toggle { width: 32px; height: 32px; }
+  /* En celular el selector muestra solo el idioma al que se puede cambiar */
+  .lang-switch { padding: 0; border: none; background: none; }
+  .lang-opt[aria-pressed="true"] { display: none; }
+  .lang-opt { width: 32px; height: 32px; padding: 0; border: 1px solid var(--border2); background: var(--surface); }
   .live-pill { padding: 6px 10px; font-size: 0; gap: 6px; }
   .live-pill .live-count { font-size: 11px; }
   .tab { padding: 7px 10px; }

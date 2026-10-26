@@ -18,7 +18,11 @@
 <header class="topbar">
   <div class="topbar-inner">
     <a class="brand" href="#/cs2">Analitics Counter</a>
-    <a class="live-pill" href="#/cs2/partidos"><span class="live-dot"></span>En vivo <span class="live-count">·</span></a>
+    <a class="live-pill" href="#/cs2/partidos"><span class="live-dot"></span><span class="live-label">En vivo</span> <span class="live-count">·</span></a>
+    <div class="lang-switch" role="group" aria-label="Idioma">
+      <button type="button" class="lang-opt" data-lang="es" aria-pressed="true">ES</button>
+      <button type="button" class="lang-opt" data-lang="en" aria-pressed="false">EN</button>
+    </div>
     <nav class="game-switch" aria-label="Juego">
       <a class="game-opt" href="#/cs2" data-game="cs2">CS2</a>
       <a class="game-opt" href="#/valorant" data-game="valorant">VAL</a>
@@ -35,7 +39,7 @@
   </div>
   <div class="search-row" id="search-row" hidden>
     <label class="search-bar">
-      <span class="visually-hidden">Buscar equipo o liga</span>
+      <span class="visually-hidden search-label">Buscar equipo o liga</span>
       <input type="search" id="search-input" placeholder="Buscar equipo o liga..." autocomplete="off">
     </label>
   </div>
@@ -46,7 +50,7 @@
 </main>
 
 <footer class="footer">
-  <div class="container">
+  <div class="container" id="footer-text">
     Datos de <a href="https://pandascore.co" target="_blank" rel="noopener noreferrer">PandaScore</a>.
     Las predicciones son estimaciones estadísticas con fines demostrativos, no consejos de apuestas.
   </div>

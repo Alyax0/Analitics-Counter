@@ -1,5 +1,5 @@
 /* ---------- Home por juego ---------- */
-.wrap { max-width: 1240px; margin: 0 auto; padding: 0 32px; }
+.wrap { max-width: 1320px; margin: 0 auto; padding: 0 32px; }
 .home-body { display: flex; flex-direction: column; gap: 64px; padding-top: 56px; padding-bottom: 72px; }
 .home-body > .notice { margin-bottom: -40px; }
 
