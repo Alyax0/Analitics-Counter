@@ -6,17 +6,21 @@ import {
   teamLogo, formDots, probBar, matchCard, skeletonList, skeletonStats, emptyState, errorState,
   rosterGrid, newsCard,
 } from './ui.js';
+import { viewHome } from './home.js';
+import { BRAND, BRAND_MARK } from './brand.js';
+import { ICONS } from './icons.js';
 
 const REFRESH_EVERY = 2 * 60 * 1000;
-const ROUTES = ['partidos', 'calendario', 'equipos', 'noticias', 'aciertos'];
+const ROUTES = ['inicio', 'partidos', 'calendario', 'equipos', 'noticias', 'aciertos'];
 // Con ?demo se usan siempre los datos guardados (game.demoFile)
 const FORCE_DEMO = new URLSearchParams(location.search).has('demo');
 
-// Rutas: #/<juego>/<sección>. Las viejas (#/partidos) siguen yendo a CS2.
+// Rutas: #/<juego>/<sección>; #/<juego> sola es la home del juego.
+// Las viejas (#/partidos) siguen yendo a CS2.
 function parseHash() {
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   const gameId = GAMES[parts[0]] ? parts.shift() : DEFAULT_GAME;
-  return { gameId, route: ROUTES.includes(parts[0]) ? parts[0] : 'partidos' };
+  return { gameId, route: ROUTES.includes(parts[0]) ? parts[0] : 'inicio' };
 }
 
 let game = GAMES[parseHash().gameId];
@@ -43,6 +47,7 @@ function gameState() {
     // Historial de predicciones: también se carga al entrar a la sección
     acc: { status: 'idle', data: null, error: null, loading: false },
     rosters: new Map(), // teamId → plantel normalizado o { error }
+    homeNews: 0, // noticia visible en el carrusel de la home
   };
 }
 
@@ -171,8 +176,18 @@ function switchGame(gameId) {
 
 function applyGame() {
   document.documentElement.style.setProperty('--accent', game.accent);
-  document.querySelector('.logo').innerHTML = `${esc(game.brand)}<em>STATS</em>`;
-  document.title = `${game.brand}STATS · ${game.name}: partidos y predicciones`;
+  document.title = `${BRAND.name} · ${game.name}: partidos y predicciones`;
+}
+
+function applyBrand() {
+  document.querySelector('.brand').innerHTML = `
+    <span class="brand-mark">${BRAND_MARK}</span>
+    <span class="brand-name">${esc(BRAND.name)}</span>
+    <span class="brand-tag">${esc(BRAND.tag)}</span>`;
+  document.querySelectorAll('.tab').forEach((t) => {
+    t.querySelector('.tab-icon').innerHTML = ICONS[t.dataset.route] || '';
+  });
+  document.querySelector('.search-toggle').innerHTML = ICONS.buscar;
 }
 
 async function loadNews({ force = false } = {}) {
@@ -196,7 +211,8 @@ async function loadNews({ force = false } = {}) {
     news.error = e.message;
   }
   news.loading = false;
-  if (currentRoute() === 'noticias' && !state.query) render();
+  if (['noticias', 'inicio'].includes(currentRoute()) && !state.query) render();
+  else renderNav();
 }
 
 async function loadSummary({ force = false } = {}) {
@@ -212,7 +228,7 @@ async function loadSummary({ force = false } = {}) {
     acc.error = e.message;
   }
   acc.loading = false;
-  if (acc === state.acc && currentRoute() === 'aciertos' && !state.query) render();
+  if (acc === state.acc && ['aciertos', 'inicio'].includes(currentRoute()) && !state.query) render();
 }
 
 // Planteles de los equipos pedidos que todavía no están cargados
@@ -254,11 +270,17 @@ function header(eyebrow, title, accent) {
       </div>
       ${state.status === 'ready' ? updatedBadge() : ''}
     </div>
+    ${notices()}`;
+}
+
+// Avisos de modo demo o de datos guardados (los usan las páginas y la home)
+function notices() {
+  return `
     ${state.status === 'ready' && state.demo ? `
       <div class="notice demo" role="status">
         <strong>Modo demo:</strong> datos reales de PandaScore capturados el ${esc(captureLabel())}, no se actualizan.
         ${FORCE_DEMO
-          ? `<a class="link-btn" href="./#/${game.id}/partidos">Ver datos en vivo</a>`
+          ? `<a class="link-btn" href="./#/${game.id}/${currentRoute()}">Ver datos en vivo</a>`
           : `La API no está disponible ahora. <button type="button" class="link-btn" data-action="refresh">Reintentar</button>`}
       </div>` : ''}
     ${state.status === 'ready' && state.stale ? `
@@ -568,9 +590,22 @@ function viewSearch() {
     ${matches.length ? `<h2 class="section-label">Partidos</h2>${list(matches.slice(0, 30))}` : ''}`;
 }
 
+// Partes de la barra que dependen de los datos: EN VIVO y el punto de noticias
+function renderNav() {
+  const live = document.querySelector('.live-pill');
+  const n = state.status === 'ready' ? state.live.length : 0;
+  live.setAttribute('href', `#/${game.id}/partidos`);
+  live.classList.toggle('on', n > 0);
+  live.querySelector('.live-count').textContent = state.status === 'ready' ? n : '·';
+  live.setAttribute('aria-label', n ? `${n} partidos en vivo` : 'Sin partidos en vivo');
+  const fresh = state.news.items.some((i) => Date.now() - Date.parse(i.date) < 24 * 3600 * 1000);
+  document.querySelector('.tab[data-route="noticias"]').classList.toggle('has-new', fresh);
+}
+
 function render() {
   const route = currentRoute();
-  document.querySelector('.logo').setAttribute('href', `#/${game.id}/partidos`);
+  document.querySelector('.brand').setAttribute('href', `#/${game.id}`);
+  renderNav();
   document.querySelectorAll('.game-opt').forEach((a) => {
     const active = a.dataset.game === game.id;
     a.setAttribute('href', `#/${a.dataset.game}/${route}`);
@@ -586,17 +621,26 @@ function render() {
     else t.removeAttribute('aria-current');
   });
 
-  if (route === 'noticias' && !state.query && state.news.status === 'idle') loadNews();
-  if (route === 'aciertos' && !state.query && state.acc.status === 'idle') loadSummary();
+  const home = route === 'inicio' && !state.query;
+  if ((route === 'noticias' || home) && !state.query && state.news.status === 'idle') loadNews();
+  if ((route === 'aciertos' || home) && !state.query && state.acc.status === 'idle') loadSummary();
 
   const busy =
     route === 'noticias' ? state.news.status === 'loading'
       : route === 'aciertos' ? state.acc.status === 'loading'
         : state.status === 'loading';
   app.setAttribute('aria-busy', String(busy));
+  app.classList.toggle('is-home', home);
   app.innerHTML = state.query
     ? viewSearch()
-    : { partidos: viewPartidos, calendario: viewCalendario, equipos: viewEquipos, noticias: viewNoticias, aciertos: viewAciertos }[route]();
+    : {
+      inicio: () => viewHome({ state, game, teamRows, notices: notices() }),
+      partidos: viewPartidos,
+      calendario: viewCalendario,
+      equipos: viewEquipos,
+      noticias: viewNoticias,
+      aciertos: viewAciertos,
+    }[route]();
 }
 
 // ===================== MODAL =====================
@@ -764,11 +808,45 @@ document.addEventListener('click', (e) => {
   }
   if (action === 'close-modal') return modal.close();
 
-  if (e.target.closest('.tab, .logo') && state.query) {
+  // Carrusel de noticias de la home
+  const count = Math.min(state.news.items.length, 5);
+  if ((action === 'home-news-prev' || action === 'home-news-next') && count) {
+    state.homeNews = (state.homeNews + (action === 'home-news-next' ? 1 : count - 1)) % count;
+    return render();
+  }
+  const dotEl = e.target.closest('[data-home-news]');
+  if (dotEl) {
+    state.homeNews = Number(dotEl.dataset.homeNews);
+    return render();
+  }
+
+  if (e.target.closest('.search-toggle')) return toggleSearch();
+
+  if (e.target.closest('.tab, .brand') && state.query) {
     searchInput.value = '';
     state.query = '';
+    toggleSearch(false);
     render();
   }
+});
+
+// La búsqueda vive en una fila que se despliega bajo la barra
+function toggleSearch(open) {
+  const row = document.getElementById('search-row');
+  const btn = document.querySelector('.search-toggle');
+  const show = open ?? row.hidden;
+  row.hidden = !show;
+  btn.setAttribute('aria-expanded', String(show));
+  if (show) searchInput.focus();
+}
+
+searchInput.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  searchInput.value = '';
+  state.query = '';
+  toggleSearch(false);
+  document.querySelector('.search-toggle').focus();
+  render();
 });
 
 // Clic en el fondo del <dialog> lo cierra
@@ -797,6 +875,7 @@ setInterval(() => {
 
 // ===================== INICIO =====================
 
+applyBrand();
 applyGame();
 clearLegacyCache();
 load();
