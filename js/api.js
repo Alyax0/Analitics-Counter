@@ -1,6 +1,8 @@
 // Clientes de /api/ps y /api/news con caché en localStorage.
 // Si la API falla y hay una copia guardada, se devuelve marcada como "stale".
 
+import { t } from './i18n.js';
+
 const CACHE_PREFIX = 'ps2_';
 const CACHE_TTL = 2 * 60 * 1000;
 const NEWS_TTL = 10 * 60 * 1000;
@@ -31,8 +33,9 @@ async function cachedJson(key, url, { ttl, force, validate }) {
   try {
     const res = await fetch(url);
     const body = await res.json().catch(() => null);
-    if (!res.ok) throw new Error((body && body.error) || `Error ${res.status}`);
-    if (!validate(body)) throw new Error('Respuesta inesperada de la API');
+    // El 404 se deja con su código: la sección Aciertos lo usa para saber que el registro no existe
+    if (!res.ok) throw new Error((body && body.error) || t('errors.status', { status: res.status }));
+    if (!validate(body)) throw new Error(t('errors.unexpected'));
     const entry = { at: Date.now(), data: body };
     writeCache(key, entry);
     return { data: body, at: entry.at, stale: false };

@@ -4,33 +4,43 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0d0d0d">
-<meta name="description" content="Partidos de CS2 y Valorant en vivo, calendario, planteles, noticias y predicciones basadas en la forma reciente de cada equipo. Datos de PandaScore.">
-<title>CS2STATS · Partidos y predicciones</title>
+<meta name="description" content="Partidos de CS2, Valorant y Overwatch en vivo, calendario, planteles, noticias y predicciones basadas en la forma reciente de cada equipo. Datos de PandaScore.">
+<title>Analitics Counter · Partidos y predicciones</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,700..900&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
 <link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/home.css">
 <script type="module" src="js/app.js"></script>
 </head>
 <body>
 
 <header class="topbar">
   <div class="topbar-inner">
-    <a class="logo" href="#/cs2/partidos">CS2<em>STATS</em></a>
+    <a class="brand" href="#/cs2">Analitics Counter</a>
+    <a class="live-pill" href="#/cs2/partidos"><span class="live-dot"></span><span class="live-label">En vivo</span> <span class="live-count">·</span></a>
+    <div class="lang-switch" role="group" aria-label="Idioma">
+      <button type="button" class="lang-opt" data-lang="es" aria-pressed="true">ES</button>
+      <button type="button" class="lang-opt" data-lang="en" aria-pressed="false">EN</button>
+    </div>
     <nav class="game-switch" aria-label="Juego">
-      <a class="game-opt" href="#/cs2/partidos" data-game="cs2">CS2</a>
-      <a class="game-opt" href="#/valorant/partidos" data-game="valorant">Valorant</a>
+      <a class="game-opt" href="#/cs2" data-game="cs2">CS2</a>
+      <a class="game-opt" href="#/valorant" data-game="valorant">VAL</a>
+      <a class="game-opt" href="#/overwatch" data-game="overwatch">OW</a>
     </nav>
     <nav class="tabs" aria-label="Secciones">
-      <a class="tab" href="#/cs2/partidos" data-route="partidos">Partidos</a>
-      <a class="tab" href="#/cs2/calendario" data-route="calendario">Calendario</a>
-      <a class="tab" href="#/cs2/equipos" data-route="equipos">Equipos</a>
-      <a class="tab" href="#/cs2/noticias" data-route="noticias">Noticias</a>
-      <a class="tab" href="#/cs2/aciertos" data-route="aciertos">Aciertos</a>
+      <a class="tab" href="#/cs2" data-route="inicio"><span class="tab-icon"></span>Inicio</a>
+      <a class="tab" href="#/cs2/partidos" data-route="partidos"><span class="tab-icon"></span>Partidos</a>
+      <a class="tab" href="#/cs2/calendario" data-route="calendario"><span class="tab-icon"></span>Calendario</a>
+      <a class="tab" href="#/cs2/equipos" data-route="equipos"><span class="tab-icon"></span>Equipos</a>
+      <a class="tab" href="#/cs2/noticias" data-route="noticias"><span class="tab-icon"></span>Noticias<span class="tab-dot" aria-hidden="true"></span></a>
+      <a class="tab" href="#/cs2/aciertos" data-route="aciertos"><span class="tab-icon"></span>Aciertos</a>
     </nav>
+    <button type="button" class="search-toggle" aria-label="Buscar equipo o liga" aria-expanded="false" aria-controls="search-row">⌕</button>
+  </div>
+  <div class="search-row" id="search-row" hidden>
     <label class="search-bar">
-      <span class="search-icon" aria-hidden="true">⌕</span>
-      <span class="visually-hidden">Buscar equipo o liga</span>
+      <span class="visually-hidden search-label">Buscar equipo o liga</span>
       <input type="search" id="search-input" placeholder="Buscar equipo o liga..." autocomplete="off">
     </label>
   </div>
@@ -41,7 +51,7 @@
 </main>
 
 <footer class="footer">
-  <div class="container">
+  <div class="container" id="footer-text">
     Datos de <a href="https://pandascore.co" target="_blank" rel="noopener noreferrer">PandaScore</a>.
     Las predicciones son estimaciones estadísticas con fines demostrativos, no consejos de apuestas.
   </div>

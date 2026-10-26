@@ -1,22 +1,16 @@
 // Configuración por juego. Para sumar otro juego de PandaScore alcanza con
-// agregar una entrada acá, su slug a la lista GAMES de api/ps.js y sus
-// fuentes de noticias en api/news.js.
+// agregar una entrada acá, su slug a la lista GAMES de api/ps.js, sus
+// fuentes de noticias en api/news.js y sus textos en i18n/*.json
+// (news.games.<id>).
 export const GAMES = {
   cs2: {
     id: 'cs2',
     slug: 'csgo', // PandaScore mantiene el slug "csgo" para CS2
     brand: 'CS2',
     name: 'Counter-Strike 2',
-    accent: '#f97316',
+    accent: '#f5c542',
     demoFile: 'data/demo.json',
-    news: {
-      eyebrow: 'HLTV y Valve',
-      sources: [
-        { id: 'HLTV', label: 'HLTV' },
-        { id: 'Steam', label: 'Actualizaciones de CS2' },
-      ],
-      footnote: 'Titulares de HLTV.org y anuncios oficiales de Valve en Steam.',
-    },
+    newsSources: ['HLTV', 'Steam'],
   },
   valorant: {
     id: 'valorant',
@@ -25,11 +19,16 @@ export const GAMES = {
     name: 'Valorant',
     accent: '#ff4655',
     demoFile: 'data/demo-valorant.json',
-    news: {
-      eyebrow: 'VLR.gg',
-      sources: [{ id: 'VLR', label: 'VLR.gg' }],
-      footnote: 'Titulares de VLR.gg.',
-    },
+    newsSources: ['VLR', 'Dexerto'],
+  },
+  overwatch: {
+    id: 'overwatch',
+    slug: 'ow',
+    brand: 'OW',
+    name: 'Overwatch',
+    accent: '#f99e1a',
+    demoFile: 'data/demo-overwatch.json',
+    newsSources: ['Steam', 'Dexerto'],
   },
 };
 

@@ -1,22 +1,27 @@
 import { GAMES, DEFAULT_GAME } from './games.js';
 import { psGet, newsGet, summaryGet, clearLegacyCache, PREDICTIONS_REPO } from './api.js';
-import { normalizeMatch, normalizeRoster, buildTeamStats, recentRecord, predict, headToHead } from './model.js';
+import { normalizeMatch, normalizeRoster, buildTeamStats, recentRecord, predict, headToHead, LABELS } from './model.js';
 import {
   esc, safeUrl, ago, dayKey, dayLabel, formatTime, formatShortDate, whenLabel, timezoneLabel,
   teamLogo, formDots, probBar, matchCard, skeletonList, skeletonStats, emptyState, errorState,
-  rosterGrid, newsCard,
+  rosterGrid, newsCard, newsHero, confLevel,
 } from './ui.js';
+import { t, setLang, preferredLang, getLang } from './i18n.js';
+import { viewHome } from './home.js';
+import { BRAND, BRAND_MARK } from './brand.js';
+import { ICONS } from './icons.js';
 
 const REFRESH_EVERY = 2 * 60 * 1000;
-const ROUTES = ['partidos', 'calendario', 'equipos', 'noticias', 'aciertos'];
+const ROUTES = ['inicio', 'partidos', 'calendario', 'equipos', 'noticias', 'aciertos'];
 // Con ?demo se usan siempre los datos guardados (game.demoFile)
 const FORCE_DEMO = new URLSearchParams(location.search).has('demo');
 
-// Rutas: #/<juego>/<sección>. Las viejas (#/partidos) siguen yendo a CS2.
+// Rutas: #/<juego>/<sección>; #/<juego> sola es la home del juego.
+// Las viejas (#/partidos) siguen yendo a CS2.
 function parseHash() {
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   const gameId = GAMES[parts[0]] ? parts.shift() : DEFAULT_GAME;
-  return { gameId, route: ROUTES.includes(parts[0]) ? parts[0] : 'partidos' };
+  return { gameId, route: ROUTES.includes(parts[0]) ? parts[0] : 'inicio' };
 }
 
 let game = GAMES[parseHash().gameId];
@@ -43,6 +48,7 @@ function gameState() {
     // Historial de predicciones: también se carga al entrar a la sección
     acc: { status: 'idle', data: null, error: null, loading: false },
     rosters: new Map(), // teamId → plantel normalizado o { error }
+    homeNews: 0, // noticia visible en el carrusel de la home
   };
 }
 
@@ -68,7 +74,7 @@ function setMatches(live, upcoming, past) {
 // Respaldo: datos reales capturados de PandaScore y guardados en el repo
 async function loadDemo(gen) {
   const res = await fetch(game.demoFile);
-  if (!res.ok) throw new Error(`No se pudo cargar el modo demo (${res.status})`);
+  if (!res.ok) throw new Error(t('errors.demo', { status: res.status }));
   const demo = await res.json();
   if (gen !== loadGen) return;
   setMatches(demo.running.map(normalizeMatch), demo.upcoming.map(normalizeMatch), demo.past.map(normalizeMatch));
@@ -171,8 +177,58 @@ function switchGame(gameId) {
 
 function applyGame() {
   document.documentElement.style.setProperty('--accent', game.accent);
-  document.querySelector('.logo').innerHTML = `${esc(game.brand)}<em>STATS</em>`;
-  document.title = `${game.brand}STATS · ${game.name}: partidos y predicciones`;
+  document.title = t('meta.title', { brand: BRAND.name, game: game.name });
+}
+
+// Cada idioma se nombra en su propio idioma
+const LANG_NAMES = { es: 'Español', en: 'English' };
+
+// Textos fijos de la página (barra, búsqueda, pie, modal) en el idioma actual
+function applyStaticTexts() {
+  document.querySelector('.brand').innerHTML = `
+    <span class="brand-mark">${BRAND_MARK}</span>
+    <span class="brand-name">${esc(BRAND.name)}</span>
+    <span class="brand-tag">${esc(BRAND.tag)}</span>`;
+  document.querySelectorAll('.tab').forEach((tab) => {
+    const route = tab.dataset.route;
+    tab.innerHTML = `<span class="tab-icon">${ICONS[route] || ''}</span>${esc(t(`nav.${route}`))}${
+      route === 'noticias' ? '<span class="tab-dot" aria-hidden="true"></span>' : ''}`;
+  });
+  document.querySelector('.live-label').textContent = t('nav.live');
+  document.querySelector('.game-switch').setAttribute('aria-label', t('nav.game'));
+  document.querySelector('.tabs').setAttribute('aria-label', t('nav.sections'));
+  const langSwitch = document.querySelector('.lang-switch');
+  langSwitch.setAttribute('aria-label', t('nav.language'));
+  langSwitch.querySelectorAll('[data-lang]').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.lang === getLang()));
+    b.setAttribute('aria-label', LANG_NAMES[b.dataset.lang]);
+    b.setAttribute('lang', b.dataset.lang);
+  });
+  const toggle = document.querySelector('.search-toggle');
+  toggle.innerHTML = ICONS.buscar;
+  toggle.setAttribute('aria-label', t('nav.search'));
+  document.querySelector('.search-label').textContent = t('nav.search');
+  searchInput.placeholder = t('nav.searchPlaceholder');
+  modal.setAttribute('aria-label', t('nav.matchDetail'));
+  document.querySelector('.modal-close').setAttribute('aria-label', t('nav.close'));
+  document.getElementById('footer-text').innerHTML = t('footer.data', {
+    link: '<a href="https://pandascore.co" target="_blank" rel="noopener noreferrer">PandaScore</a>',
+  });
+  // Textos que arma la normalización de partidos
+  LABELS.tbd = t('common.tbd');
+  LABELS.tournament = t('common.tournament');
+  LABELS.maps = (n) => t('common.maps', { n });
+}
+
+async function switchLang(code) {
+  if (code === getLang()) return;
+  await setLang(code);
+  applyStaticTexts();
+  applyGame();
+  if (modal.open) modal.close();
+  render();
+  // Vuelve a normalizar los partidos para que "Por definir" y similares cambien de idioma
+  load();
 }
 
 async function loadNews({ force = false } = {}) {
@@ -196,7 +252,8 @@ async function loadNews({ force = false } = {}) {
     news.error = e.message;
   }
   news.loading = false;
-  if (currentRoute() === 'noticias' && !state.query) render();
+  if (['noticias', 'inicio'].includes(currentRoute()) && !state.query) render();
+  else renderNav();
 }
 
 async function loadSummary({ force = false } = {}) {
@@ -212,7 +269,7 @@ async function loadSummary({ force = false } = {}) {
     acc.error = e.message;
   }
   acc.loading = false;
-  if (acc === state.acc && currentRoute() === 'aciertos' && !state.query) render();
+  if (acc === state.acc && ['aciertos', 'inicio'].includes(currentRoute()) && !state.query) render();
 }
 
 // Planteles de los equipos pedidos que todavía no están cargados
@@ -224,7 +281,7 @@ async function ensureRosters(ids) {
       for (const t of r.data) state.rosters.set(t.id, normalizeRoster(t));
       for (const id of missing) if (!state.rosters.has(id)) state.rosters.set(id, { id, players: [] });
     } catch {
-      for (const id of missing) state.rosters.set(id, { id, error: 'No se pudo cargar el plantel.' });
+      for (const id of missing) state.rosters.set(id, { id, error: true });
     }
   }
   // Reemplaza los huecos que haya en el modal abierto
@@ -254,17 +311,23 @@ function header(eyebrow, title, accent) {
       </div>
       ${state.status === 'ready' ? updatedBadge() : ''}
     </div>
+    ${notices()}`;
+}
+
+// Avisos de modo demo o de datos guardados (los usan las páginas y la home)
+function notices() {
+  return `
     ${state.status === 'ready' && state.demo ? `
       <div class="notice demo" role="status">
-        <strong>Modo demo:</strong> datos reales de PandaScore capturados el ${esc(captureLabel())}, no se actualizan.
+        ${t('notices.demo', { date: esc(captureLabel()) })}
         ${FORCE_DEMO
-          ? `<a class="link-btn" href="./#/${game.id}/partidos">Ver datos en vivo</a>`
-          : `La API no está disponible ahora. <button type="button" class="link-btn" data-action="refresh">Reintentar</button>`}
+          ? `<a class="link-btn" href="./#/${game.id}/${currentRoute()}">${esc(t('notices.demoLive'))}</a>`
+          : `${esc(t('notices.apiDown'))} <button type="button" class="link-btn" data-action="refresh">${esc(t('common.retry'))}</button>`}
       </div>` : ''}
     ${state.status === 'ready' && state.stale ? `
       <div class="notice" role="status">
-        Mostrando datos guardados: la API no respondió (${esc(state.error || 'error desconocido')}).
-        <button type="button" class="link-btn" data-action="refresh">Reintentar</button>
+        ${esc(t('notices.stale', { error: state.error || t('common.unknownError') }))}
+        <button type="button" class="link-btn" data-action="refresh">${esc(t('common.retry'))}</button>
       </div>` : ''}`;
 }
 
@@ -273,14 +336,14 @@ function captureLabel() {
 }
 
 function updatedText() {
-  return state.demo ? 'Datos de demo' : `Actualizado ${ago(state.at)}`;
+  return state.demo ? t('common.demoData') : t('common.updated', { ago: ago(state.at) });
 }
 
 function updatedBadge() {
   return `
     <div class="updated">
-      <span id="updated-text">${updatedText()}</span>
-      <button type="button" class="icon-btn ${state.loading ? 'spinning' : ''}" id="refresh-btn" data-action="refresh" aria-label="Actualizar datos" title="Actualizar">↻</button>
+      <span id="updated-text">${esc(updatedText())}</span>
+      <button type="button" class="icon-btn ${state.loading ? 'spinning' : ''}" id="refresh-btn" data-action="refresh" aria-label="${esc(t('common.refreshData'))}" title="${esc(t('common.refresh'))}">↻</button>
     </div>`;
 }
 
@@ -297,7 +360,7 @@ function list(matches) {
 }
 
 function viewPartidos() {
-  const head = header('● ' + game.name, 'Partidos', 'en vivo y próximos');
+  const head = header('● ' + game.name, t('partidos.title'), t('partidos.accent'));
   if (state.status === 'loading') return head + skeletonStats() + skeletonList(6);
   if (state.status === 'error') return head + errorState(state.error);
 
@@ -319,46 +382,41 @@ function viewPartidos() {
     finished,
   };
   const shown = groups[state.filter];
-  const emptyText = {
-    all: ['Sin partidos', 'PandaScore no devolvió partidos por ahora.'],
-    live: ['No hay partidos en vivo', 'Mirá los próximos partidos o el calendario completo.'],
-    upcoming: ['No hay partidos programados', 'Volvé a revisar más tarde.'],
-    finished: ['Sin resultados recientes', 'No hay partidos terminados para mostrar.'],
-  }[state.filter];
-
-  const chip = (id, label, count) =>
-    `<button type="button" class="chip ${state.filter === id ? 'active' : ''}" data-filter="${id}" aria-pressed="${state.filter === id}">${label} <span>${count}</span></button>`;
+  const chip = (id, count) =>
+    `<button type="button" class="chip ${state.filter === id ? 'active' : ''}" data-filter="${id}" aria-pressed="${state.filter === id}">${esc(t(`partidos.chips.${id}`))} <span>${count}</span></button>`;
+  const stat = (key, value, accent = false) => `
+    <div class="stat-item"><div class="s-label">${esc(t(`partidos.stats.${key}`))}</div><div class="s-val ${accent ? 'accent' : ''}">${value}</div><div class="s-sub">${esc(t(`partidos.stats.${key}Sub`))}</div></div>`;
 
   return `
     ${head}
     <div class="stat-row">
-      <div class="stat-item"><div class="s-label">En vivo</div><div class="s-val accent">${state.live.length}</div><div class="s-sub">partidos ahora</div></div>
-      <div class="stat-item"><div class="s-label">Próximas 24 h</div><div class="s-val">${next24.length}</div><div class="s-sub">partidos programados</div></div>
-      <div class="stat-item"><div class="s-label">Ligas activas</div><div class="s-val">${leagues.size}</div><div class="s-sub">en vivo o en 24 h</div></div>
-      <div class="stat-item"><div class="s-label">Con predicción</div><div class="s-val">${predictable}<small>/${upcoming.length}</small></div><div class="s-sub">próximos con datos</div></div>
+      ${stat('live', state.live.length, true)}
+      ${stat('next24', next24.length)}
+      ${stat('leagues', leagues.size)}
+      ${stat('withPred', `${predictable}<small>/${upcoming.length}</small>`)}
     </div>
-    <div class="chips" role="group" aria-label="Filtrar partidos">
-      ${chip('all', 'Todos', groups.all.length)}
-      ${chip('live', 'En vivo', groups.live.length)}
-      ${chip('upcoming', 'Próximos', groups.upcoming.length)}
-      ${chip('finished', 'Finalizados', groups.finished.length)}
+    <div class="chips" role="group" aria-label="${esc(t('partidos.filterAria'))}">
+      ${chip('all', groups.all.length)}
+      ${chip('live', groups.live.length)}
+      ${chip('upcoming', groups.upcoming.length)}
+      ${chip('finished', groups.finished.length)}
     </div>
-    ${shown.length ? list(shown) : emptyState(...emptyText)}
-    <p class="footnote">Predicción: tasa de victorias en los últimos 10 partidos de cada equipo (suavizado de Laplace), sobre ${state.past.length} resultados cargados (los más recientes y el historial de los equipos que juegan pronto). Es un modelo simple con fines demostrativos.</p>`;
+    ${shown.length ? list(shown) : emptyState(t(`partidos.empty.${state.filter}.title`), t(`partidos.empty.${state.filter}.text`))}
+    <p class="footnote">${esc(t('partidos.footnote', { n: state.past.length }))}</p>`;
 }
 
 function viewCalendario() {
-  const head = header('● Próximos partidos', 'Calendario', `(${timezoneLabel()})`);
+  const head = header('● ' + t('calendario.eyebrow'), t('calendario.title'), `(${timezoneLabel()})`);
   if (state.status === 'loading') return head + skeletonList(8);
   if (state.status === 'error') return head + errorState(state.error);
 
   const items = [...state.live, ...state.upcoming];
-  if (!items.length) return head + emptyState('Calendario vacío', 'No hay partidos programados por ahora.');
+  if (!items.length) return head + emptyState(t('calendario.emptyTitle'), t('calendario.emptyText'));
 
   const days = new Map();
   for (const m of items) {
     const k = m.status === 'live' ? 'live' : dayKey(m.date);
-    if (!days.has(k)) days.set(k, { label: m.status === 'live' ? 'En vivo ahora' : dayLabel(m.date), items: [] });
+    if (!days.has(k)) days.set(k, { label: m.status === 'live' ? t('calendario.liveNow') : dayLabel(m.date), items: [] });
     days.get(k).items.push(m);
   }
 
@@ -389,7 +447,7 @@ function teamTable(rows) {
   return `
     <div class="table-wrap">
       <table class="teams">
-        <thead><tr><th scope="col">#</th><th scope="col">Equipo</th><th scope="col">V–D</th><th scope="col">% victorias</th><th scope="col">Forma</th></tr></thead>
+        <thead><tr><th scope="col">#</th>${['team', 'wl', 'pct', 'form'].map((c) => `<th scope="col">${esc(t(`equipos.col.${c}`))}</th>`).join('')}</tr></thead>
         <tbody>
           ${rows.map(({ team, rec }, i) => {
             const pct = Math.round((rec.wins / rec.n) * 100);
@@ -408,15 +466,15 @@ function teamTable(rows) {
 }
 
 function viewEquipos() {
-  const head = header('● Últimos resultados', 'Equipos', 'en forma');
+  const head = header('● ' + t('equipos.eyebrow'), t('equipos.title'), t('equipos.accent'));
   if (state.status === 'loading') return head + skeletonList(8);
   if (state.status === 'error') return head + errorState(state.error);
 
   const rows = teamRows().slice(0, 25);
-  if (!rows.length) return head + emptyState('Sin datos', 'Todavía no hay suficientes resultados para armar la tabla.');
+  if (!rows.length) return head + emptyState(t('equipos.emptyTitle'), t('equipos.emptyText'));
   return `
     ${head}
-    <p class="lead">Equipos con al menos 5 partidos entre los ${state.past.length} resultados cargados (los más recientes y el historial de los equipos que juegan pronto), ordenados por % de victorias en sus últimos 10. No es un ranking oficial.</p>
+    <p class="lead">${esc(t('equipos.lead', { n: state.past.length }))}</p>
     ${teamTable(rows)}`;
 }
 
@@ -425,29 +483,22 @@ function viewNoticias() {
   const head = `
     <div class="page-head">
       <div>
-        <div class="eyebrow">● ${esc(game.news.eyebrow)}</div>
-        <h1 class="heading">Noticias <span>&amp; actualizaciones</span></h1>
+        <div class="eyebrow">● ${esc(t(`news.games.${game.id}.eyebrow`))}</div>
+        <h1 class="heading">${esc(t('news.title'))} <span>${esc(t('news.accent'))}</span></h1>
       </div>
       ${news.status === 'ready' ? `
         <div class="updated">
-          <span>Actualizado ${ago(news.at)}</span>
-          <button type="button" class="icon-btn ${news.loading ? 'spinning' : ''}" data-action="refresh-news" aria-label="Actualizar noticias" title="Actualizar">↻</button>
+          <span>${esc(t('common.updated', { ago: ago(news.at) }))}</span>
+          <button type="button" class="icon-btn ${news.loading ? 'spinning' : ''}" data-action="refresh-news" aria-label="${esc(t('news.refreshAria'))}" title="${esc(t('common.refresh'))}">↻</button>
         </div>` : ''}
     </div>`;
   if (news.status === 'idle' || news.status === 'loading') {
     return head + `<div class="news-grid" aria-hidden="true">${'<div class="skeleton-card"><span class="sk w30"></span><span class="sk w60"></span><span class="sk w40"></span></div>'.repeat(6)}</div>`;
   }
-  if (news.status === 'error') {
-    return head + `
-      <div class="state error" role="alert">
-        <div class="state-title">No pudimos cargar las noticias</div>
-        <p>${esc(news.error)}</p>
-        <button type="button" class="btn" data-action="refresh-news">Reintentar</button>
-      </div>`;
-  }
+  if (news.status === 'error') return head + errorState(news.error, t('errors.news'), 'refresh-news');
 
-  const sources = game.news.sources;
-  const labelOf = (id) => sources.find((s) => s.id === id)?.label || id;
+  const sources = game.newsSources;
+  const labelOf = (id) => t(`news.games.${game.id}.sources.${id}`);
   const failed = Object.entries(news.sources).filter(([, v]) => v !== 'ok').map(([k]) => labelOf(k));
   const shown = news.filter === 'all' ? news.items : news.items.filter((n) => n.source === news.filter);
   const count = (s) => news.items.filter((n) => n.source === s).length;
@@ -456,36 +507,51 @@ function viewNoticias() {
 
   return `
     ${head}
-    ${news.stale ? `<div class="notice" role="status">Mostrando noticias guardadas: no se pudieron actualizar (${esc(news.error || 'error')}).</div>` : ''}
-    ${failed.length && !news.stale ? `<div class="notice" role="status">No se pudo cargar ${esc(failed.join(' ni '))} por ahora; se muestran las demás fuentes.</div>` : ''}
+    ${news.stale ? `<div class="notice" role="status">${esc(t('news.stale', { error: news.error || t('common.unknownError') }))}</div>` : ''}
+    ${failed.length && !news.stale ? `<div class="notice" role="status">${esc(t('news.failed', { sources: failed.join(', ') }))}</div>` : ''}
     ${sources.length > 1 ? `
-      <div class="chips" role="group" aria-label="Filtrar noticias">
-        ${chip('all', 'Todas', news.items.length)}
-        ${sources.map((s) => chip(s.id, s.label, count(s.id))).join('')}
+      <div class="chips" role="group" aria-label="${esc(t('news.filterAria'))}">
+        ${chip('all', t('news.all'), news.items.length)}
+        ${sources.map((id) => chip(id, labelOf(id), count(id))).join('')}
       </div>` : ''}
-    ${shown.length ? `<div class="news-grid">${shown.map(newsCard).join('')}</div>` : emptyState('Sin noticias', 'Esta fuente no tiene novedades por ahora.')}
-    <p class="footnote">${esc(game.news.footnote)} Cada nota abre en su fuente original.</p>`;
+    ${shown.length ? `${newsHero(shown[0])}${shown.length > 1 ? `<div class="news-grid">${shown.slice(1).map(newsCard).join('')}</div>` : ''}` : emptyState(t('news.emptyTitle'), t('news.emptyText'))}
+    <p class="footnote">${esc(t(`news.games.${game.id}.footnote`))} ${esc(t('news.footnote'))}</p>`;
 }
 
 const pct = (x) => (x == null ? '—' : `${Math.round(x * 100)}%`);
 
+// Motivos de anulación tal como los guarda scripts/predictions-core.js
+const VOID_REASONS = {
+  cancelado: 'canceled',
+  'guardada tarde': 'late',
+  'W.O.': 'forfeit',
+  empate: 'draw',
+  'sin ganador': 'noWinner',
+  'sin resultado': 'noResult',
+};
+
 function predRow(r) {
   const favProb = r.favorite === 'B' ? 100 - r.probA : r.probA;
   const name = (side) => {
-    const t = side === 'A' ? r.teamA : r.teamB;
-    return r.favorite === side ? `<strong>${esc(t.name)}</strong>` : esc(t.name);
+    const team = side === 'A' ? r.teamA : r.teamB;
+    return r.favorite === side ? `<strong>${esc(team.name)}</strong>` : esc(team.name);
   };
   let outcome;
   if (r.status === 'pending') outcome = `<span class="muted">${esc(whenLabel(new Date(r.scheduledAt)))}</span>`;
-  else if (r.status === 'void') outcome = `<span class="muted">No cuenta · ${esc(r.reason)}</span>`;
-  else {
-    const mark = r.correct === null ? '<span class="muted">Parejo</span>' : r.correct ? '<span class="ok">✓ Acertó</span>' : '<span class="ko">✗ Falló</span>';
+  else if (r.status === 'void') {
+    // El motivo viene en español desde los datos; si no lo conocemos, se muestra tal cual
+    const code = VOID_REASONS[r.reason];
+    const reason = code ? t(`aciertos.reasons.${code}`) : r.reason;
+    outcome = `<span class="muted">${esc(t('aciertos.row.void', { reason }))}</span>`;
+  } else {
+    const mark = r.correct === null ? `<span class="muted">${esc(t('aciertos.row.even'))}</span>`
+      : r.correct ? `<span class="ok">${esc(t('aciertos.row.hit'))}</span>` : `<span class="ko">${esc(t('aciertos.row.miss'))}</span>`;
     outcome = `<span class="nowrap">${r.result.scoreA}–${r.result.scoreB}</span> ${mark}`;
   }
   return `
     <li class="pred-row">
       <span class="pred-date muted">${esc(formatShortDate(new Date(r.scheduledAt)))}</span>
-      <span class="pred-match">${name('A')} <span class="muted">vs</span> ${name('B')}<span class="pred-league">${esc(r.league)} · confianza ${esc(r.confidence)}</span></span>
+      <span class="pred-match">${name('A')} <span class="muted">vs</span> ${name('B')}<span class="pred-league">${esc(t('aciertos.row.league', { league: r.league, level: confLevel(r.confidence) }))}</span></span>
       <span class="pred-prob">${r.favorite ? `${favProb}%` : '50%'}</span>
       <span class="pred-outcome">${outcome}</span>
     </li>`;
@@ -496,81 +562,88 @@ function viewAciertos() {
   const head = `
     <div class="page-head">
       <div>
-        <div class="eyebrow">● Historial verificable</div>
-        <h1 class="heading">Aciertos <span>del modelo</span></h1>
+        <div class="eyebrow">● ${esc(t('aciertos.eyebrow'))}</div>
+        <h1 class="heading">${esc(t('aciertos.title'))} <span>${esc(t('aciertos.accent'))}</span></h1>
       </div>
-      ${acc.status === 'ready' && acc.data.updatedAt ? `<div class="updated"><span>Último cambio ${ago(Date.parse(acc.data.updatedAt))}</span></div>` : ''}
+      ${acc.status === 'ready' && acc.data.updatedAt ? `<div class="updated"><span>${esc(t('aciertos.lastChange', { ago: ago(Date.parse(acc.data.updatedAt)) }))}</span></div>` : ''}
     </div>`;
   if (acc.status === 'idle' || acc.status === 'loading') return head + skeletonStats() + skeletonList(4);
   if (acc.status === 'error') {
-    if (/404/.test(acc.error)) {
-      return head + emptyState('El registro todavía no empezó', 'La primera ejecución automática crea el historial. Volvé a mirar en un rato.');
-    }
-    return head + `
-      <div class="state error" role="alert">
-        <div class="state-title">No pudimos cargar el historial</div>
-        <p>${esc(acc.error)}</p>
-        <button type="button" class="btn" data-action="refresh-acc">Reintentar</button>
-      </div>`;
+    if (/404/.test(acc.error)) return head + emptyState(t('aciertos.notStartedTitle'), t('aciertos.notStartedText'));
+    return head + errorState(acc.error, t('errors.history'), 'refresh-acc');
   }
 
   const g = acc.data.games[game.id];
   const footnote = `
-    <p class="footnote">
-      Cada predicción se guarda unas horas antes del partido y no se modifica después; si quedó guardada después del inicio, se anula.
-      Cancelados, W.O. y empates no cuentan. Modelo <code>${esc(acc.data.model)}</code>.
-      Todo el registro está en el <a href="${PREDICTIONS_REPO}/commits/data" target="_blank" rel="noopener noreferrer">historial de la rama data en GitHub ↗</a>.
-    </p>`;
-  if (!g) return head + emptyState(`Sin predicciones de ${game.name} todavía`, 'Se registran solas unas horas antes de cada partido.') + footnote;
+    <p class="footnote">${t('aciertos.footnote', {
+      model: `<code>${esc(acc.data.model)}</code>`,
+      link: `<a href="${PREDICTIONS_REPO}/commits/data" target="_blank" rel="noopener noreferrer">${esc(t('aciertos.footnoteLink'))}</a>`,
+    })}</p>`;
+  if (!g) return head + emptyState(t('aciertos.noGameTitle', { game: game.name }), t('aciertos.noGameText')) + footnote;
 
   const levels = ['alta', 'media', 'baja'].map((level) => ({ level, ...g.byConfidence[level] }));
+  const stat = (key, value, sub, accent = false) => `
+    <div class="stat-item"><div class="s-label">${esc(t(`aciertos.stats.${key}`))}</div><div class="s-val ${accent ? 'accent' : ''}">${value}</div><div class="s-sub">${esc(sub)}</div></div>`;
   return `
     ${head}
     <div class="stat-row">
-      <div class="stat-item"><div class="s-label">Aciertos</div><div class="s-val accent">${pct(g.accuracy)}</div><div class="s-sub">${g.correct} de ${g.decided} con favorito</div></div>
-      <div class="stat-item"><div class="s-label">Resueltas</div><div class="s-val">${g.resolved}</div><div class="s-sub">desde el ${esc(formatShortDate(new Date(g.since)))}</div></div>
-      <div class="stat-item"><div class="s-label">Brier score</div><div class="s-val">${g.brier == null ? '—' : g.brier.toFixed(3)}</div><div class="s-sub">menor es mejor · azar: 0.250</div></div>
-      <div class="stat-item"><div class="s-label">Pendientes</div><div class="s-val">${g.pending}</div><div class="s-sub">esperando resultado</div></div>
+      ${stat('accuracy', pct(g.accuracy), t('aciertos.stats.accuracySub', { correct: g.correct, decided: g.decided }), true)}
+      ${stat('resolved', g.resolved, t('aciertos.stats.resolvedSub', { date: formatShortDate(new Date(g.since)) }))}
+      ${stat('brier', g.brier == null ? '—' : g.brier.toFixed(3), t('aciertos.stats.brierSub'))}
+      ${stat('pending', g.pending, t('aciertos.stats.pendingSub'))}
     </div>
-    ${!g.resolved ? '<div class="notice" role="status">Todavía no terminó ningún partido con predicción. Los primeros resultados aparecen apenas terminen.</div>' : ''}
-    <h2 class="section-label">Por nivel de confianza</h2>
+    ${!g.resolved ? `<div class="notice" role="status">${esc(t('aciertos.noneResolved'))}</div>` : ''}
+    <h2 class="section-label">${esc(t('aciertos.byConfidence'))}</h2>
     <div class="table-wrap">
       <table class="teams compact">
-        <thead><tr><th scope="col">Confianza</th><th scope="col">Partidos</th><th scope="col">Aciertos</th></tr></thead>
+        <thead><tr>${['confidence', 'matches', 'hits'].map((c) => `<th scope="col">${esc(t(`aciertos.col.${c}`))}</th>`).join('')}</tr></thead>
         <tbody>
           ${levels.map((l) => `
             <tr>
-              <td><span class="conf conf-${l.level}">${l.level[0].toUpperCase() + l.level.slice(1)}</span></td>
+              <td><span class="conf conf-${l.level}">${esc(t(`conf.label.${l.level}`))}</span></td>
               <td>${l.n}</td>
               <td>${l.n ? `<div class="pct"><span class="pct-bar"><span style="width:${Math.round((l.correct / l.n) * 100)}%"></span></span><strong>${pct(l.correct / l.n)}</strong></div>` : '<span class="muted">—</span>'}</td>
             </tr>`).join('')}
         </tbody>
       </table>
     </div>
-    ${g.pendingList.length ? `<h2 class="section-label">Próximas (ya guardadas)</h2><ul class="pred-list">${g.pendingList.map(predRow).join('')}</ul>` : ''}
-    ${g.recent.length ? `<h2 class="section-label">Últimas resueltas</h2><ul class="pred-list">${g.recent.map(predRow).join('')}</ul>` : ''}
+    ${g.pendingList.length ? `<h2 class="section-label">${esc(t('aciertos.pendingTitle'))}</h2><ul class="pred-list">${g.pendingList.map(predRow).join('')}</ul>` : ''}
+    ${g.recent.length ? `<h2 class="section-label">${esc(t('aciertos.recentTitle'))}</h2><ul class="pred-list">${g.recent.map(predRow).join('')}</ul>` : ''}
     ${footnote}`;
 }
 
 function viewSearch() {
   const q = state.query.toLowerCase();
-  const head = `<div class="page-head"><div><div class="eyebrow">● Búsqueda</div><h1 class="heading">Resultados para <span>“${esc(state.query)}”</span></h1></div></div>`;
+  const head = `<div class="page-head"><div><div class="eyebrow">● ${esc(t('search.eyebrow'))}</div><h1 class="heading">${esc(t('search.title'))} <span>“${esc(state.query)}”</span></h1></div></div>`;
   if (state.status !== 'ready') return head + skeletonList(3);
 
   const hit = (m) => m.teamA.name.toLowerCase().includes(q) || m.teamB.name.toLowerCase().includes(q) || m.league.toLowerCase().includes(q);
   const matches = [...state.live, ...state.upcoming, ...state.past.slice(0, 60)].filter(hit);
   const teams = teamRows().filter(({ team }) => team.name.toLowerCase().includes(q)).slice(0, 10);
 
-  if (!matches.length && !teams.length) return head + emptyState('Sin resultados', 'Probá con otro nombre de equipo o liga.');
+  if (!matches.length && !teams.length) return head + emptyState(t('search.emptyTitle'), t('search.emptyText'));
   return `
     ${head}
-    ${teams.length ? `<h2 class="section-label">Equipos</h2>${teamTable(teams)}` : ''}
-    ${matches.length ? `<h2 class="section-label">Partidos</h2>${list(matches.slice(0, 30))}` : ''}`;
+    ${teams.length ? `<h2 class="section-label">${esc(t('search.teams'))}</h2>${teamTable(teams)}` : ''}
+    ${matches.length ? `<h2 class="section-label">${esc(t('search.matches'))}</h2>${list(matches.slice(0, 30))}` : ''}`;
+}
+
+// Partes de la barra que dependen de los datos: EN VIVO y el punto de noticias
+function renderNav() {
+  const live = document.querySelector('.live-pill');
+  const n = state.status === 'ready' ? state.live.length : 0;
+  live.setAttribute('href', `#/${game.id}/partidos`);
+  live.classList.toggle('on', n > 0);
+  live.querySelector('.live-count').textContent = state.status === 'ready' ? n : '·';
+  live.setAttribute('aria-label', n ? t('nav.liveAria', { n }) : t('nav.noLive'));
+  const fresh = state.news.items.some((i) => Date.now() - Date.parse(i.date) < 24 * 3600 * 1000);
+  document.querySelector('.tab[data-route="noticias"]').classList.toggle('has-new', fresh);
 }
 
 function render() {
   const route = currentRoute();
-  document.querySelector('.logo').setAttribute('href', `#/${game.id}/partidos`);
+  document.querySelector('.brand').setAttribute('href', `#/${game.id}`);
+  renderNav();
   document.querySelectorAll('.game-opt').forEach((a) => {
     const active = a.dataset.game === game.id;
     a.setAttribute('href', `#/${a.dataset.game}/${route}`);
@@ -578,25 +651,34 @@ function render() {
     if (active) a.setAttribute('aria-current', 'true');
     else a.removeAttribute('aria-current');
   });
-  document.querySelectorAll('.tab').forEach((t) => {
-    t.setAttribute('href', `#/${game.id}/${t.dataset.route}`);
-    const active = !state.query && t.dataset.route === route;
-    t.classList.toggle('active', active);
-    if (active) t.setAttribute('aria-current', 'page');
-    else t.removeAttribute('aria-current');
+  document.querySelectorAll('.tab').forEach((tab) => {
+    tab.setAttribute('href', `#/${game.id}/${tab.dataset.route}`);
+    const active = !state.query && tab.dataset.route === route;
+    tab.classList.toggle('active', active);
+    if (active) tab.setAttribute('aria-current', 'page');
+    else tab.removeAttribute('aria-current');
   });
 
-  if (route === 'noticias' && !state.query && state.news.status === 'idle') loadNews();
-  if (route === 'aciertos' && !state.query && state.acc.status === 'idle') loadSummary();
+  const home = route === 'inicio' && !state.query;
+  if ((route === 'noticias' || home) && !state.query && state.news.status === 'idle') loadNews();
+  if ((route === 'aciertos' || home) && !state.query && state.acc.status === 'idle') loadSummary();
 
   const busy =
     route === 'noticias' ? state.news.status === 'loading'
       : route === 'aciertos' ? state.acc.status === 'loading'
         : state.status === 'loading';
   app.setAttribute('aria-busy', String(busy));
+  app.classList.toggle('is-home', home);
   app.innerHTML = state.query
     ? viewSearch()
-    : { partidos: viewPartidos, calendario: viewCalendario, equipos: viewEquipos, noticias: viewNoticias, aciertos: viewAciertos }[route]();
+    : {
+      inicio: () => viewHome({ state, game, teamRows, notices: notices() }),
+      partidos: viewPartidos,
+      calendario: viewCalendario,
+      equipos: viewEquipos,
+      noticias: viewNoticias,
+      aciertos: viewAciertos,
+    }[route]();
 }
 
 // ===================== MODAL =====================
@@ -606,9 +688,9 @@ function findMatch(id) {
 }
 
 function formList(team, n = 5) {
-  if (!team.id) return '<p class="muted small">Equipo por definir</p>';
+  if (!team.id) return `<p class="muted small">${esc(t('modal.tbdTeam'))}</p>`;
   const rec = recentRecord(state.stats, team.id, n);
-  if (!rec.n) return '<p class="muted small">Sin partidos recientes en los datos</p>';
+  if (!rec.n) return `<p class="muted small">${esc(t('modal.noRecent'))}</p>`;
   return `<ul class="form-list">${rec.history.map((r) => `
     <li><span class="fd ${r.result}"></span><span class="fl-opp">vs ${esc(r.opponent)}</span><span class="fl-score">${esc(r.score)}</span></li>`).join('')}</ul>`;
 }
@@ -620,22 +702,22 @@ function openMatch(id) {
   const h2h = m.teamA.id && m.teamB.id ? headToHead(state.past, m.teamA.id, m.teamB.id).slice(0, 5) : [];
   const stream = m.stream && safeUrl(m.stream);
   const statusText = {
-    live: `En vivo · mapa ${Math.min(m.currentMap, m.bestOf)} de ${m.bestOf}`,
+    live: t('modal.liveMap', { cur: Math.min(m.currentMap, m.bestOf), total: m.bestOf }),
     upcoming: whenLabel(m.date),
-    finished: `Finalizado · ${formatShortDate(m.date)}`,
-    canceled: 'Cancelado',
-    postponed: 'Pospuesto',
+    finished: t('match.finished', { date: formatShortDate(m.date) }),
+    canceled: t('match.canceled'),
+    postponed: t('match.postponed'),
   }[m.status];
 
   let predHtml = '';
   if (pred && pred.insufficient) {
-    predHtml = `<p class="muted small">No hay suficientes partidos recientes de ambos equipos para estimar (mínimo 3 cada uno; hay ${pred.a.n} y ${pred.b.n}).</p>`;
+    predHtml = `<p class="muted small">${esc(t('modal.insufficient', { a: pred.a.n, b: pred.b.n }))}</p>`;
   } else if (pred) {
     predHtml = `
       ${probBar(pred, m)}
       <p class="small explain">
-        ${esc(m.teamA.name)} ganó ${pred.a.wins} de sus últimos ${pred.a.n}; ${esc(m.teamB.name)} ganó ${pred.b.wins} de ${pred.b.n}.
-        Confianza <strong class="conf-${pred.confidence}">${pred.confidence}</strong>.
+        ${esc(t('modal.explain', { a: m.teamA.name, wa: pred.a.wins, na: pred.a.n, b: m.teamB.name, wb: pred.b.wins, nb: pred.b.n }))}
+        ${esc(t('modal.confidence'))} <strong class="conf-${pred.confidence}">${esc(confLevel(pred.confidence))}</strong>.
       </p>`;
   }
 
@@ -652,24 +734,24 @@ function openMatch(id) {
       </div>
       ${mdTeam(m.teamB)}
     </div>
-    ${predHtml ? `<h3 class="section-label">Predicción por forma reciente</h3>${predHtml}` : ''}
-    <h3 class="section-label">Últimos 5 partidos</h3>
+    ${predHtml ? `<h3 class="section-label">${esc(t('modal.predTitle'))}</h3>${predHtml}` : ''}
+    <h3 class="section-label">${esc(t('modal.last5'))}</h3>
     <div class="md-forms">
       <div><div class="md-form-title">${esc(m.teamA.name)}</div>${formList(m.teamA)}</div>
       <div><div class="md-form-title">${esc(m.teamB.name)}</div>${formList(m.teamB)}</div>
     </div>
     ${h2h.length ? `
-      <h3 class="section-label">Cruces recientes</h3>
+      <h3 class="section-label">${esc(t('modal.h2h'))}</h3>
       <ul class="h2h">${h2h.map((x) => {
-        const w = x.draw ? 'Empate' : x.winner === 'A' ? x.teamA.name : x.winner === 'B' ? x.teamB.name : '—';
+        const w = x.draw ? t('match.draw') : x.winner === 'A' ? x.teamA.name : x.winner === 'B' ? x.teamB.name : '—';
         return `<li><span class="muted">${esc(formatShortDate(x.date))} · ${esc(x.league)}</span><span><strong>${esc(w)}</strong> ${x.scoreA}–${x.scoreB}</span></li>`;
       }).join('')}</ul>` : ''}
     ${m.teamA.id || m.teamB.id ? `
-      <h3 class="section-label">Planteles</h3>
+      <h3 class="section-label">${esc(t('modal.rosters'))}</h3>
       <div class="md-forms">
-        ${[m.teamA, m.teamB].map((t) => `<div><div class="md-form-title">${esc(t.name)}</div>${rosterSlot(t)}</div>`).join('')}
+        ${[m.teamA, m.teamB].map((team) => `<div><div class="md-form-title">${esc(team.name)}</div>${rosterSlot(team)}</div>`).join('')}
       </div>` : ''}
-    ${stream && m.status !== 'finished' ? `<a class="btn block" href="${esc(stream)}" target="_blank" rel="noopener noreferrer">Ver transmisión ↗</a>` : ''}`;
+    ${stream && m.status !== 'finished' ? `<a class="btn block" href="${esc(stream)}" target="_blank" rel="noopener noreferrer">${esc(t('modal.stream'))}</a>` : ''}`;
 
   showModal();
   ensureRosters([m.teamA.id, m.teamB.id]);
@@ -678,12 +760,12 @@ function openMatch(id) {
 function mdTeam(team) {
   const inner = `${teamLogo(team, 'lg')}<span>${esc(team.name)}</span>`;
   return team.id
-    ? `<button type="button" class="md-team team-link" data-team="${team.id}" aria-label="Ver equipo ${esc(team.name)}">${inner}</button>`
+    ? `<button type="button" class="md-team team-link" data-team="${team.id}" aria-label="${esc(t('modal.viewTeam', { team: team.name }))}">${inner}</button>`
     : `<div class="md-team">${inner}</div>`;
 }
 
 function rosterSlot(team) {
-  if (!team.id) return '<p class="muted small">Equipo por definir</p>';
+  if (!team.id) return `<p class="muted small">${esc(t('modal.tbdTeam'))}</p>`;
   return `<div data-roster="${team.id}">${rosterGrid(state.rosters.get(team.id))}</div>`;
 }
 
@@ -706,20 +788,24 @@ function openTeam(id) {
     <div class="team-head">
       ${teamLogo(team, 'lg')}
       <div>
-        <div class="eyebrow">Equipo</div>
+        <div class="eyebrow">${esc(t('modal.team'))}</div>
         <h2 class="team-title">${esc(team.name)}</h2>
-        <div class="md-sub">${rec.n ? `${rec.wins}–${rec.losses}${rec.draws ? `–${rec.draws}` : ''} en sus últimos ${rec.n} · ${Math.round((rec.wins / rec.n) * 100)}% de victorias` : 'Sin resultados recientes en los datos'}</div>
+        <div class="md-sub">${esc(rec.n ? t('modal.record', {
+          wl: `${rec.wins}–${rec.losses}${rec.draws ? `–${rec.draws}` : ''}`,
+          n: rec.n,
+          pct: Math.round((rec.wins / rec.n) * 100),
+        }) : t('modal.noResults'))}</div>
       </div>
     </div>
-    <h3 class="section-label">Plantel</h3>
+    <h3 class="section-label">${esc(t('modal.roster'))}</h3>
     ${rosterSlot(team)}
     ${next.length ? `
-      <h3 class="section-label">Próximos partidos</h3>
+      <h3 class="section-label">${esc(t('modal.next'))}</h3>
       <ul class="h2h">${next.map((m) => {
         const rival = m.teamA.id === id ? m.teamB : m.teamA;
-        return `<li><button type="button" class="row-link" data-match="${m.id}"><span>vs <strong>${esc(rival.name)}</strong></span><span class="muted">${m.status === 'live' ? 'En vivo' : esc(whenLabel(m.date))}</span></button></li>`;
+        return `<li><button type="button" class="row-link" data-match="${m.id}"><span>vs <strong>${esc(rival.name)}</strong></span><span class="muted">${esc(m.status === 'live' ? t('modal.live') : whenLabel(m.date))}</span></button></li>`;
       }).join('')}</ul>` : ''}
-    <h3 class="section-label">Últimos resultados</h3>
+    <h3 class="section-label">${esc(t('modal.lastResults'))}</h3>
     ${formList(team, 10)}`;
 
   showModal();
@@ -764,11 +850,48 @@ document.addEventListener('click', (e) => {
   }
   if (action === 'close-modal') return modal.close();
 
-  if (e.target.closest('.tab, .logo') && state.query) {
+  // Carrusel de noticias de la home
+  const count = Math.min(state.news.items.length, 5);
+  if ((action === 'home-news-prev' || action === 'home-news-next') && count) {
+    state.homeNews = (state.homeNews + (action === 'home-news-next' ? 1 : count - 1)) % count;
+    return render();
+  }
+  const dotEl = e.target.closest('[data-home-news]');
+  if (dotEl) {
+    state.homeNews = Number(dotEl.dataset.homeNews);
+    return render();
+  }
+
+  if (e.target.closest('.search-toggle')) return toggleSearch();
+
+  const langEl = e.target.closest('[data-lang]');
+  if (langEl) return switchLang(langEl.dataset.lang);
+
+  if (e.target.closest('.tab, .brand') && state.query) {
     searchInput.value = '';
     state.query = '';
+    toggleSearch(false);
     render();
   }
+});
+
+// La búsqueda vive en una fila que se despliega bajo la barra
+function toggleSearch(open) {
+  const row = document.getElementById('search-row');
+  const btn = document.querySelector('.search-toggle');
+  const show = open ?? row.hidden;
+  row.hidden = !show;
+  btn.setAttribute('aria-expanded', String(show));
+  if (show) searchInput.focus();
+}
+
+searchInput.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  searchInput.value = '';
+  state.query = '';
+  toggleSearch(false);
+  document.querySelector('.search-toggle').focus();
+  render();
 });
 
 // Clic en el fondo del <dialog> lo cierra
@@ -797,6 +920,13 @@ setInterval(() => {
 
 // ===================== INICIO =====================
 
+// El idioma se carga antes de pintar nada para no mostrar textos mezclados
+try {
+  await setLang(preferredLang());
+} catch {
+  await setLang('es');
+}
+applyStaticTexts();
 applyGame();
 clearLegacyCache();
 load();

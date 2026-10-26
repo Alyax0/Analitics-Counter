@@ -6,7 +6,7 @@
 // Los filtros van con nombres planos (status, opponents, ids) y acá se traducen
 // a la sintaxis filter[...] de PandaScore.
 
-const GAMES = new Set(['csgo', 'valorant']);
+const GAMES = new Set(['csgo', 'valorant', 'ow']);
 
 // ruta → segundos de caché en el CDN de Vercel
 const PATHS = {

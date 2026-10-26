@@ -1,0 +1,302 @@
+{
+  "meta": {
+    "title": "{brand} · {game}: partidos y predicciones"
+  },
+  "nav": {
+    "inicio": "Inicio",
+    "partidos": "Partidos",
+    "calendario": "Calendario",
+    "equipos": "Equipos",
+    "noticias": "Noticias",
+    "aciertos": "Aciertos",
+    "live": "En vivo",
+    "liveAria": { "one": "{n} partido en vivo", "other": "{n} partidos en vivo" },
+    "noLive": "Sin partidos en vivo",
+    "game": "Juego",
+    "sections": "Secciones",
+    "language": "Idioma",
+    "search": "Buscar equipo o liga",
+    "searchPlaceholder": "Buscar equipo o liga...",
+    "close": "Cerrar",
+    "matchDetail": "Detalle del partido"
+  },
+  "footer": {
+    "data": "Datos de {link}. Las predicciones son estimaciones estadísticas con fines demostrativos, no consejos de apuestas."
+  },
+  "common": {
+    "retry": "Reintentar",
+    "refresh": "Actualizar",
+    "refreshData": "Actualizar datos",
+    "updated": "Actualizado {ago}",
+    "demoData": "Datos de demo",
+    "noData": "Sin datos",
+    "tbd": "Por definir",
+    "tournament": "Torneo",
+    "maps": { "one": "{n} mapa", "other": "{n} mapas" },
+    "toConfirm": "Por confirmar",
+    "dateToConfirm": "Fecha por confirmar",
+    "today": "Hoy",
+    "tomorrow": "Mañana",
+    "secondsAgo": "hace unos segundos",
+    "minutesAgo": "hace {n} min",
+    "hoursAgo": "hace {n} h",
+    "unknownError": "error desconocido"
+  },
+  "notices": {
+    "demo": "<strong>Modo demo:</strong> datos reales de PandaScore capturados el {date}, no se actualizan.",
+    "demoLive": "Ver datos en vivo",
+    "apiDown": "La API no está disponible ahora.",
+    "stale": "Mostrando datos guardados: la API no respondió ({error})."
+  },
+  "errors": {
+    "matches": "No pudimos cargar los partidos",
+    "news": "No pudimos cargar las noticias",
+    "history": "No pudimos cargar el historial",
+    "roster": "No se pudo cargar el plantel.",
+    "demo": "No se pudo cargar el modo demo ({status})",
+    "unexpected": "Respuesta inesperada de la API",
+    "status": "Error {status}"
+  },
+  "conf": {
+    "alta": "alta",
+    "media": "media",
+    "baja": "baja",
+    "label": { "alta": "Alta", "media": "Media", "baja": "Baja" }
+  },
+  "match": {
+    "liveMap": "En vivo · Mapa {cur}/{total}",
+    "finished": "Finalizado · {date}",
+    "canceled": "Cancelado",
+    "postponed": "Pospuesto",
+    "forfeit": "Ganado por W.O.",
+    "draw": "Empate",
+    "won": "Ganó {team}",
+    "tbdTeams": "Rivales por definir",
+    "insufficient": "Sin datos suficientes para predecir",
+    "favorite": "Favorito: <strong>{team}</strong>",
+    "even": "Parejo",
+    "confidence": "Confianza {level}",
+    "aria": "{a} contra {b}, {league}. Ver detalle",
+    "probAria": "Probabilidad estimada: {a} {pa}%, {b} {pb}%",
+    "win": "Victoria",
+    "loss": "Derrota"
+  },
+  "roster": {
+    "none": "PandaScore no tiene el plantel de este equipo.",
+    "age": { "one": "{n} año", "other": "{n} años" }
+  },
+  "news": {
+    "readFull": "Leer la nota completa",
+    "new": "Nuevo",
+    "kind": { "news": "Noticia", "update": "Actualización" },
+    "title": "Noticias",
+    "accent": "& actualizaciones",
+    "refreshAria": "Actualizar noticias",
+    "stale": "Mostrando noticias guardadas: no se pudieron actualizar ({error}).",
+    "failed": "No se pudo cargar {sources} por ahora; se muestran las demás fuentes.",
+    "filterAria": "Filtrar noticias",
+    "all": "Todas",
+    "emptyTitle": "Sin noticias",
+    "emptyText": "Esta fuente no tiene novedades por ahora.",
+    "footnote": "Cada nota abre en su fuente original.",
+    "games": {
+      "cs2": {
+        "eyebrow": "HLTV y Valve",
+        "footnote": "Titulares de HLTV.org y anuncios oficiales de Valve en Steam.",
+        "sources": { "HLTV": "HLTV", "Steam": "Actualizaciones de CS2" }
+      },
+      "valorant": {
+        "eyebrow": "VLR.gg y Dexerto",
+        "footnote": "Titulares de VLR.gg y de Dexerto.",
+        "sources": { "VLR": "VLR.gg", "Dexerto": "Dexerto" }
+      },
+      "overwatch": {
+        "eyebrow": "Blizzard y Dexerto",
+        "footnote": "Anuncios oficiales de Blizzard en Steam y titulares de Dexerto.",
+        "sources": { "Steam": "Actualizaciones de Overwatch", "Dexerto": "Dexerto" }
+      }
+    }
+  },
+  "partidos": {
+    "title": "Partidos",
+    "accent": "en vivo y próximos",
+    "stats": {
+      "live": "En vivo",
+      "liveSub": "partidos ahora",
+      "next24": "Próximas 24 h",
+      "next24Sub": "partidos programados",
+      "leagues": "Ligas activas",
+      "leaguesSub": "en vivo o en 24 h",
+      "withPred": "Con predicción",
+      "withPredSub": "próximos con datos"
+    },
+    "filterAria": "Filtrar partidos",
+    "chips": { "all": "Todos", "live": "En vivo", "upcoming": "Próximos", "finished": "Finalizados" },
+    "empty": {
+      "all": { "title": "Sin partidos", "text": "PandaScore no devolvió partidos por ahora." },
+      "live": { "title": "No hay partidos en vivo", "text": "Mirá los próximos partidos o el calendario completo." },
+      "upcoming": { "title": "No hay partidos programados", "text": "Volvé a revisar más tarde." },
+      "finished": { "title": "Sin resultados recientes", "text": "No hay partidos terminados para mostrar." }
+    },
+    "footnote": "Predicción: tasa de victorias en los últimos 10 partidos de cada equipo (suavizado de Laplace), sobre {n} resultados cargados (los más recientes y el historial de los equipos que juegan pronto). Es un modelo simple con fines demostrativos."
+  },
+  "calendario": {
+    "eyebrow": "Próximos partidos",
+    "title": "Calendario",
+    "emptyTitle": "Calendario vacío",
+    "emptyText": "No hay partidos programados por ahora.",
+    "liveNow": "En vivo ahora"
+  },
+  "equipos": {
+    "eyebrow": "Últimos resultados",
+    "title": "Equipos",
+    "accent": "en forma",
+    "emptyTitle": "Sin datos",
+    "emptyText": "Todavía no hay suficientes resultados para armar la tabla.",
+    "lead": "Equipos con al menos 5 partidos entre los {n} resultados cargados (los más recientes y el historial de los equipos que juegan pronto), ordenados por % de victorias en sus últimos 10. No es un ranking oficial.",
+    "col": { "team": "Equipo", "wl": "V–D", "pct": "% victorias", "form": "Forma" }
+  },
+  "aciertos": {
+    "eyebrow": "Historial verificable",
+    "title": "Aciertos",
+    "accent": "del modelo",
+    "lastChange": "Último cambio {ago}",
+    "notStartedTitle": "El registro todavía no empezó",
+    "notStartedText": "La primera ejecución automática crea el historial. Volvé a mirar en un rato.",
+    "footnote": "Cada predicción se guarda unas horas antes del partido y no se modifica después; si quedó guardada después del inicio, se anula. Cancelados, W.O. y empates no cuentan. Modelo {model}. Todo el registro está en el {link}.",
+    "footnoteLink": "historial de la rama data en GitHub ↗",
+    "noGameTitle": "Sin predicciones de {game} todavía",
+    "noGameText": "Se registran solas unas horas antes de cada partido.",
+    "stats": {
+      "accuracy": "Aciertos",
+      "accuracySub": "{correct} de {decided} con favorito",
+      "resolved": "Resueltas",
+      "resolvedSub": "desde el {date}",
+      "brier": "Brier score",
+      "brierSub": "menor es mejor · azar: 0.250",
+      "pending": "Pendientes",
+      "pendingSub": "esperando resultado"
+    },
+    "noneResolved": "Todavía no terminó ningún partido con predicción. Los primeros resultados aparecen apenas terminen.",
+    "byConfidence": "Por nivel de confianza",
+    "col": { "confidence": "Confianza", "matches": "Partidos", "hits": "Aciertos" },
+    "pendingTitle": "Próximas (ya guardadas)",
+    "recentTitle": "Últimas resueltas",
+    "row": {
+      "void": "No cuenta · {reason}",
+      "even": "Parejo",
+      "hit": "✓ Acertó",
+      "miss": "✗ Falló",
+      "league": "{league} · confianza {level}"
+    },
+    "reasons": {
+      "canceled": "cancelado",
+      "late": "guardada tarde",
+      "forfeit": "W.O.",
+      "draw": "empate",
+      "noWinner": "sin ganador",
+      "noResult": "sin resultado"
+    }
+  },
+  "search": {
+    "eyebrow": "Búsqueda",
+    "title": "Resultados para",
+    "emptyTitle": "Sin resultados",
+    "emptyText": "Probá con otro nombre de equipo o liga.",
+    "teams": "Equipos",
+    "matches": "Partidos"
+  },
+  "modal": {
+    "liveMap": "En vivo · mapa {cur} de {total}",
+    "insufficient": "No hay suficientes partidos recientes de ambos equipos para estimar (mínimo 3 cada uno; hay {a} y {b}).",
+    "explain": "{a} ganó {wa} de sus últimos {na}; {b} ganó {wb} de {nb}.",
+    "confidence": "Confianza",
+    "predTitle": "Predicción por forma reciente",
+    "last5": "Últimos 5 partidos",
+    "h2h": "Cruces recientes",
+    "rosters": "Planteles",
+    "stream": "Ver transmisión ↗",
+    "tbdTeam": "Equipo por definir",
+    "noRecent": "Sin partidos recientes en los datos",
+    "viewTeam": "Ver equipo {team}",
+    "team": "Equipo",
+    "record": "{wl} en sus últimos {n} · {pct}% de victorias",
+    "noResults": "Sin resultados recientes en los datos",
+    "roster": "Plantel",
+    "next": "Próximos partidos",
+    "lastResults": "Últimos resultados",
+    "live": "En vivo"
+  },
+  "home": {
+    "kicker": "Esports · {game}",
+    "lead": "Partidos en vivo, resultados y predicciones <br>con datos reales, todo en un lugar",
+    "facts": {
+      "live": "<strong>{n}</strong> en vivo",
+      "today": { "one": "<strong>{n}</strong> partido hoy", "other": "<strong>{n}</strong> partidos hoy" },
+      "accuracy": "<strong>{pct}</strong> de aciertos"
+    },
+    "featured": {
+      "badgeLive": "En vivo",
+      "badge": "Destacado",
+      "descLive": "Se juega ahora: mapa {cur} de {total}, va {a}–{b}.",
+      "descFav": "El modelo da como favorito a {team} con {pct}%, según su forma reciente.",
+      "descInsufficient": "Todavía no hay partidos suficientes para estimar quién gana.",
+      "descEven": "El modelo lo ve parejo.",
+      "cta": "Ver partido",
+      "ovHead": "{when} · forma reciente",
+      "noDataChip": "sin datos",
+      "confidence": "Confianza",
+      "aria": "Ver {a} contra {b}"
+    },
+    "form": {
+      "ovHead": "Últimos 10 partidos · los que mejor llegan",
+      "badge": "Forma",
+      "meta": "Equipos en racha",
+      "title": "¿Quién llega mejor?",
+      "desc": "Los equipos con mejor racha en sus últimos 10 partidos, calculado con resultados reales. No es un ranking oficial.",
+      "cta": "Ver equipos",
+      "aria": "Ver equipos en forma"
+    },
+    "panel": {
+      "eyebrow": "Partidos",
+      "title": "La competencia al día",
+      "sub": "Lo que se juega ahora, lo que viene y cómo terminaron los últimos partidos",
+      "live": "En vivo ahora",
+      "next": "Próximos partidos",
+      "results": "Resultados recientes",
+      "noLive": "No hay partidos en vivo.",
+      "nextAt": "El próximo: {when}.",
+      "noNext": "Sin partidos programados.",
+      "noResults": "Sin resultados recientes."
+    },
+    "pred": {
+      "eyebrow": "Predicciones",
+      "title": "¿Cuánto acierta <span>el modelo?</span>",
+      "notStarted": "El registro todavía no empezó.",
+      "loadError": "No se pudo cargar el historial.",
+      "noGame": "Todavía no hay predicciones registradas de este juego.",
+      "bigSub": "de aciertos en {decided} partidos resueltos · {pending} pendientes",
+      "matches": { "one": "{n} partido", "other": "{n} partidos" }
+    },
+    "calendar": { "eyebrow": "Calendario", "title": "Lo que se viene", "empty": "Sin partidos programados.", "cta": "Ver calendario" },
+    "news": { "eyebrow": "Noticias", "title": "Lo último", "error": "No se pudieron cargar las noticias.", "cta": "Ver noticias" },
+    "live": {
+      "eyebrowOn": "{n} en vivo",
+      "eyebrowOff": "Sin directo",
+      "title": "En vivo",
+      "pillOn": { "one": "{n} partido ahora", "other": "{n} partidos ahora" },
+      "pillOff": "Nada en juego ahora",
+      "cta": "Ver partidos"
+    },
+    "strip": {
+      "label": "Últimas noticias",
+      "new": "Nuevo",
+      "all": "Ver todas",
+      "prev": "Noticia anterior",
+      "next": "Noticia siguiente",
+      "item": "Noticia {n}",
+      "error": "No se pudieron cargar las noticias."
+    },
+    "side": { "eyebrow": "Esports", "next": "Próximo partido", "cta": "Ver detalle" }
+  }
+}
