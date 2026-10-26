@@ -1,14 +1,17 @@
-// Noticias por juego (?game=cs2|valorant):
+// Noticias por juego (?game=cs2|valorant|overwatch):
 // - CS2: titulares de HLTV (RSS) y notas de parche oficiales de Valve (Steam)
 // - Valorant: titulares de VLR.gg (RSS)
+// - Overwatch: anuncios oficiales de Blizzard (Steam) y titulares de Dexerto (RSS)
 // Solo se devuelven título, resumen corto, fecha y enlace a la fuente original.
 //
 // Cada fuente es independiente: si una falla, se devuelven las demás.
 
 const HLTV_RSS = 'https://www.hltv.org/rss/news';
 const VLR_RSS = 'https://www.vlr.gg/rss';
-const STEAM_NEWS =
-  'https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=730&count=10&feeds=steam_community_announcements';
+const DEXERTO_OW_RSS = 'https://www.dexerto.com/feed/category/overwatch/';
+// appid de cada juego en Steam (730 = CS2, 2357570 = Overwatch)
+const steamNewsUrl = (appid) =>
+  `https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appid}&count=10&feeds=steam_community_announcements`;
 const TIMEOUT_MS = 6000;
 const UA = 'Mozilla/5.0 (compatible; CS2STATS/1.0; +https://analitics-counter.vercel.app)';
 
@@ -79,9 +82,10 @@ async function rss(feedUrl, source, origin, limit = 10) {
 
 const hltv = () => rss(HLTV_RSS, 'HLTV', 'https://www.hltv.org/');
 const vlr = () => rss(VLR_RSS, 'VLR', 'https://www.vlr.gg/', 20);
+const dexertoOw = () => rss(DEXERTO_OW_RSS, 'Dexerto', 'https://www.dexerto.com/');
 
-async function steam() {
-  const data = JSON.parse(await fetchText(STEAM_NEWS));
+async function steam(appid) {
+  const data = JSON.parse(await fetchText(steamNewsUrl(appid)));
   const list = (data.appnews && data.appnews.newsitems) || [];
   return list
     .filter((n) => n.feedname === 'steam_community_announcements' && n.gid)
@@ -90,15 +94,16 @@ async function steam() {
       kind: 'Actualización',
       title: n.title,
       summary: steamSummary(n.contents),
-      url: `https://store.steampowered.com/news/app/730/view/${n.gid}`,
+      url: `https://store.steampowered.com/news/app/${appid}/view/${n.gid}`,
       date: new Date(n.date * 1000).toISOString(),
     }));
 }
 
 // Fuentes por juego; la clave es el nombre que ve el usuario
 const SOURCES = {
-  cs2: { HLTV: hltv, Steam: steam },
+  cs2: { HLTV: hltv, Steam: () => steam(730) },
   valorant: { VLR: vlr },
+  overwatch: { Steam: () => steam(2357570), Dexerto: dexertoOw },
 };
 
 export default async function handler(req, res) {

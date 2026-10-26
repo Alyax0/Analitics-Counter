@@ -108,6 +108,11 @@
         "eyebrow": "VLR.gg",
         "footnote": "Titulares de VLR.gg.",
         "sources": { "VLR": "VLR.gg" }
+      },
+      "overwatch": {
+        "eyebrow": "Blizzard y Dexerto",
+        "footnote": "Anuncios oficiales de Blizzard en Steam y titulares de Dexerto.",
+        "sources": { "Steam": "Actualizaciones de Overwatch", "Dexerto": "Dexerto" }
       }
     }
   },

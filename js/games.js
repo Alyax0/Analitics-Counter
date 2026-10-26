@@ -21,6 +21,15 @@ export const GAMES = {
     demoFile: 'data/demo-valorant.json',
     newsSources: ['VLR'],
   },
+  overwatch: {
+    id: 'overwatch',
+    slug: 'ow',
+    brand: 'OW',
+    name: 'Overwatch',
+    accent: '#3ea8ff', // provisorio: el naranja oficial choca con el de CS2
+    demoFile: 'data/demo-overwatch.json',
+    newsSources: ['Steam', 'Dexerto'],
+  },
 };
 
 export const DEFAULT_GAME = 'cs2';

@@ -65,7 +65,8 @@ export function normalizeMatch(m) {
     stage: (m.tournament && m.tournament.name) || '',
     tier: (m.tournament && m.tournament.tier) || null,
     format: formatLabel(m),
-    bestOf: m.number_of_games || 1,
+    // "Mapa x de y": en FT3 se juegan hasta 5 mapas
+    bestOf: m.match_type === 'first_to' ? (m.number_of_games || 1) * 2 - 1 : m.number_of_games || 1,
     currentMap: games.filter((g) => g.status === 'finished').length + 1,
     teamA,
     teamB,
