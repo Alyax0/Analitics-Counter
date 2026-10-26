@@ -19,7 +19,7 @@ export const GAMES = {
     name: 'Valorant',
     accent: '#ff4655',
     demoFile: 'data/demo-valorant.json',
-    newsSources: ['VLR'],
+    newsSources: ['VLR', 'Dexerto'],
   },
   overwatch: {
     id: 'overwatch',

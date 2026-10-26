@@ -86,7 +86,8 @@
     "age": { "one": "{n} year old", "other": "{n} years old" }
   },
   "news": {
-    "read": "Read on {source} ↗",
+    "readFull": "Read the full story",
+    "new": "New",
     "kind": { "news": "News", "update": "Update" },
     "title": "News",
     "accent": "& updates",
@@ -105,9 +106,9 @@
         "sources": { "HLTV": "HLTV", "Steam": "CS2 updates" }
       },
       "valorant": {
-        "eyebrow": "VLR.gg",
-        "footnote": "Headlines from VLR.gg.",
-        "sources": { "VLR": "VLR.gg" }
+        "eyebrow": "VLR.gg and Dexerto",
+        "footnote": "Headlines from VLR.gg and Dexerto.",
+        "sources": { "VLR": "VLR.gg", "Dexerto": "Dexerto" }
       },
       "overwatch": {
         "eyebrow": "Blizzard and Dexerto",

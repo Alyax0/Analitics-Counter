@@ -1,14 +1,16 @@
 // Noticias por juego (?game=cs2|valorant|overwatch):
 // - CS2: titulares de HLTV (RSS) y notas de parche oficiales de Valve (Steam)
-// - Valorant: titulares de VLR.gg (RSS)
+// - Valorant: titulares de VLR.gg y Dexerto (RSS)
 // - Overwatch: anuncios oficiales de Blizzard (Steam) y titulares de Dexerto (RSS)
-// Solo se devuelven título, resumen corto, fecha y enlace a la fuente original.
+// Solo se devuelven título, resumen corto, fecha, imagen de portada (si hay) y
+// enlace a la fuente original.
 //
 // Cada fuente es independiente: si una falla, se devuelven las demás.
 
 const HLTV_RSS = 'https://www.hltv.org/rss/news';
 const VLR_RSS = 'https://www.vlr.gg/rss';
 const DEXERTO_OW_RSS = 'https://www.dexerto.com/feed/category/overwatch/';
+const DEXERTO_VAL_RSS = 'https://www.dexerto.com/feed/category/valorant/';
 // appid de cada juego en Steam (730 = CS2, 2357570 = Overwatch)
 const steamNewsUrl = (appid) =>
   `https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appid}&count=10&feeds=steam_community_announcements`;
@@ -58,6 +60,11 @@ async function fetchText(url) {
   return res.text();
 }
 
+// Imagen de portada: solo https; si no hay, la página muestra un degradado
+function httpsOrNull(url) {
+  return /^https:\/\/[^\s"'<>]+$/.test(url || '') ? url : null;
+}
+
 // RSS genérico: solo se aceptan enlaces del sitio de origen
 async function rss(feedUrl, source, origin, limit = 10) {
   const xml = await fetchText(feedUrl);
@@ -67,12 +74,15 @@ async function rss(feedUrl, source, origin, limit = 10) {
     const url = tag('link');
     const date = new Date(tag('pubDate'));
     if (!url.startsWith(origin) || isNaN(date)) continue;
+    // HLTV usa <media:content>, Dexerto <enclosure> y <media:thumbnail>; VLR no trae imagen
+    const media = body.match(/<(?:media:content|media:thumbnail|enclosure)\b[^>]*\burl="([^"]+)"/);
     items.push({
       source,
       kind: 'Noticia',
       title: tag('title'),
       summary: shorten(tag('description')),
       url,
+      image: httpsOrNull(media && decode(media[1])),
       date: date.toISOString(),
     });
   }
@@ -83,6 +93,17 @@ async function rss(feedUrl, source, origin, limit = 10) {
 const hltv = () => rss(HLTV_RSS, 'HLTV', 'https://www.hltv.org/');
 const vlr = () => rss(VLR_RSS, 'VLR', 'https://www.vlr.gg/', 20);
 const dexertoOw = () => rss(DEXERTO_OW_RSS, 'Dexerto', 'https://www.dexerto.com/');
+const dexertoVal = () => rss(DEXERTO_VAL_RSS, 'Dexerto', 'https://www.dexerto.com/');
+
+// Primera imagen del anuncio: [img src="{STEAM_CLAN_IMAGE}/..."] o la miniatura
+// de un video [previewyoutube="id;full"]. Las notas de parche de CS2 no traen.
+function steamImage(raw) {
+  const text = String(raw || '');
+  const img = text.match(/\[img(?: src=)?"?\]?\s*\{STEAM_CLAN_IMAGE\}(\/[^\s"\[\]]+)/);
+  if (img) return httpsOrNull(`https://clan.akamai.steamstatic.com/images${img[1]}`);
+  const yt = text.match(/previewyoutube="([\w-]{6,20})[;"]/);
+  return yt ? `https://i.ytimg.com/vi/${yt[1]}/hqdefault.jpg` : null;
+}
 
 async function steam(appid) {
   const data = JSON.parse(await fetchText(steamNewsUrl(appid)));
@@ -95,6 +116,7 @@ async function steam(appid) {
       title: n.title,
       summary: steamSummary(n.contents),
       url: `https://store.steampowered.com/news/app/${appid}/view/${n.gid}`,
+      image: steamImage(n.contents),
       date: new Date(n.date * 1000).toISOString(),
     }));
 }
@@ -102,7 +124,7 @@ async function steam(appid) {
 // Fuentes por juego; la clave es el nombre que ve el usuario
 const SOURCES = {
   cs2: { HLTV: hltv, Steam: () => steam(730) },
-  valorant: { VLR: vlr },
+  valorant: { VLR: vlr, Dexerto: dexertoVal },
   overwatch: { Steam: () => steam(2357570), Dexerto: dexertoOw },
 };
 

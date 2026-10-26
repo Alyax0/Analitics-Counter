@@ -4,7 +4,7 @@ import { normalizeMatch, normalizeRoster, buildTeamStats, recentRecord, predict,
 import {
   esc, safeUrl, ago, dayKey, dayLabel, formatTime, formatShortDate, whenLabel, timezoneLabel,
   teamLogo, formDots, probBar, matchCard, skeletonList, skeletonStats, emptyState, errorState,
-  rosterGrid, newsCard, confLevel,
+  rosterGrid, newsCard, newsHero, confLevel,
 } from './ui.js';
 import { t, setLang, preferredLang, getLang } from './i18n.js';
 import { viewHome } from './home.js';
@@ -514,7 +514,7 @@ function viewNoticias() {
         ${chip('all', t('news.all'), news.items.length)}
         ${sources.map((id) => chip(id, labelOf(id), count(id))).join('')}
       </div>` : ''}
-    ${shown.length ? `<div class="news-grid">${shown.map(newsCard).join('')}</div>` : emptyState(t('news.emptyTitle'), t('news.emptyText'))}
+    ${shown.length ? `${newsHero(shown[0])}${shown.length > 1 ? `<div class="news-grid">${shown.slice(1).map(newsCard).join('')}</div>` : ''}` : emptyState(t('news.emptyTitle'), t('news.emptyText'))}
     <p class="footnote">${esc(t(`news.games.${game.id}.footnote`))} ${esc(t('news.footnote'))}</p>`;
 }
 

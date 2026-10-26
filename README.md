@@ -12,7 +12,7 @@ Cada juego tiene sus propias secciones, con rutas `#/cs2/...`, `#/valorant/...` 
 - **Modo demo:** si la API no responde, se cargan datos reales capturados en `data/demo.json` (CS2), `data/demo-valorant.json` o `data/demo-overwatch.json`, con un aviso. Con `?demo` en la URL se fuerza ese modo.
 - **Detalle de partido:** forma de cada equipo, cruces recientes, planteles y enlace a la transmisión.
 - **Ficha de equipo:** plantel con nacionalidad y edad, próximos partidos y últimos 10 resultados.
-- **Noticias:** en CS2, titulares de HLTV (RSS) y notas de parche oficiales de Valve (API de noticias de Steam); en Valorant, titulares de VLR.gg (RSS); en Overwatch, anuncios oficiales de Blizzard en Steam y titulares de Dexerto (RSS). Todas con enlace a la fuente original.
+- **Noticias:** una nota destacada grande y una grilla de dos columnas, con la imagen de portada de la fuente (o un degradado si no trae) y la etiqueta NUEVO en las de menos de 48 h. En CS2, titulares de HLTV (RSS) y notas de parche oficiales de Valve (API de noticias de Steam); en Valorant, titulares de VLR.gg y Dexerto (RSS); en Overwatch, anuncios oficiales de Blizzard en Steam y titulares de Dexerto (RSS). Todas con enlace a la fuente original.
 
 ### Cómo se calcula la predicción
 
@@ -47,7 +47,7 @@ js/home.js        home de cada juego
 js/i18n.js        traducciones: t(clave), idioma guardado en el navegador
 i18n/*.json       textos de la interfaz en español e inglés
 api/ps.js         proxy serverless a PandaScore
-api/news.js       noticias por juego (HLTV, Steam, VLR.gg, Dexerto), con caché de 15 min
+api/news.js       noticias e imágenes por juego (HLTV, Steam, VLR.gg, Dexerto), con caché de 15 min
 scripts/          registro de predicciones (lo corre GitHub Actions)
 ```
 

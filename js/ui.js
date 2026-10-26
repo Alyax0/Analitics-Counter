@@ -170,16 +170,59 @@ export function rosterGrid(roster) {
   }).join('')}</ul>`;
 }
 
+// "Nuevo": publicada hace menos de 48 h
+export const isNewNews = (n) => Date.now() - Date.parse(n.date) < 48 * 3600 * 1000;
+
+// Portada de una nota: la imagen de la fuente sobre un degradado con el nombre
+// de la fuente, que queda a la vista si no hay imagen o no carga.
+export function newsVisual(n, cls = 'news-visual') {
+  const src = n.image && safeUrl(n.image);
+  return `
+    <span class="${cls}" aria-hidden="true">
+      <span class="nv-source">${esc(n.source)}</span>
+      <span class="nv-kind">${esc(newsKind(n.kind))}</span>
+      ${src ? `<img src="${esc(src)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
+    </span>`;
+}
+
+function newsMeta(n) {
+  const d = new Date(n.date);
+  return `
+    <span class="news-top">
+      ${isNewNews(n) ? `<span class="badge">${esc(t('news.new'))}</span>` : ''}
+      <span class="news-tag ${n.source === 'Steam' ? 'steam' : ''}">${esc(n.source)} · ${esc(newsKind(n.kind))}</span>
+      <time datetime="${esc(n.date)}">${esc(whenLabel(d))}</time>
+    </span>`;
+}
+
+// Nota destacada: la más reciente del filtro elegido
+export function newsHero(n) {
+  const url = safeUrl(n.url);
+  if (!url) return '';
+  return `
+    <a class="news-hero" href="${esc(url)}" target="_blank" rel="noopener noreferrer">
+      ${newsVisual(n, 'news-visual hero')}
+      <span class="news-body">
+        ${newsMeta(n)}
+        <span class="news-title">${esc(n.title)}</span>
+        ${n.summary ? `<span class="news-summary">${esc(n.summary)}</span>` : ''}
+        <span class="news-link">${esc(t('news.readFull'))} →</span>
+      </span>
+    </a>`;
+}
+
 export function newsCard(n) {
   const url = safeUrl(n.url);
   if (!url) return '';
-  const d = new Date(n.date);
   return `
     <a class="news-card" href="${esc(url)}" target="_blank" rel="noopener noreferrer">
-      <span class="news-top"><span class="news-tag ${n.source === 'Steam' ? 'steam' : ''}">${esc(n.source)} · ${esc(newsKind(n.kind))}</span><time datetime="${esc(n.date)}">${esc(whenLabel(d))}</time></span>
-      <span class="news-title">${esc(n.title)}</span>
-      ${n.summary ? `<span class="news-summary">${esc(n.summary)}</span>` : ''}
-      <span class="news-link">${esc(t('news.read', { source: n.source }))}</span>
+      ${newsVisual(n)}
+      <span class="news-body">
+        ${newsMeta(n)}
+        <span class="news-title">${esc(n.title)}</span>
+        ${n.summary ? `<span class="news-summary">${esc(n.summary)}</span>` : ''}
+        <span class="news-link">${esc(t('news.readFull'))} →</span>
+      </span>
     </a>`;
 }
 

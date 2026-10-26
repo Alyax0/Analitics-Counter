@@ -3,7 +3,7 @@
 // Recibe el estado ya cargado desde app.js y solo arma HTML.
 
 import { predict, recentRecord } from './model.js';
-import { esc, safeUrl, ago, dayKey, dayLabel, formatTime, formatShortDate, whenLabel, teamLogo, formDots, skeletonList, errorState, newsKind, confLevel } from './ui.js';
+import { esc, safeUrl, ago, dayKey, dayLabel, formatTime, formatShortDate, whenLabel, teamLogo, formDots, skeletonList, errorState, newsKind, confLevel, isNewNews } from './ui.js';
 import { ICONS } from './icons.js';
 import { t } from './i18n.js';
 
@@ -262,12 +262,14 @@ function newsStrip({ state, game }, featured) {
     const i = Math.min(state.homeNews || 0, items.length - 1);
     const n = items[i];
     const url = safeUrl(n.url);
-    const isNew = Date.now() - Date.parse(n.date) < 48 * HOUR;
+    const isNew = isNewNews(n);
+    const img = n.image && safeUrl(n.image);
     carousel = `
       <article class="news-feature">
         <a class="nf-visual" href="${esc(url || '#')}" target="_blank" rel="noopener noreferrer" aria-hidden="true" tabindex="-1">
           <span class="nf-source">${esc(n.source)}</span>
           <span class="nf-kind">${esc(newsKind(n.kind))}</span>
+          ${img ? `<img src="${esc(img)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
         </a>
         <div class="nf-body">
           <div class="nf-meta">${isNew ? `<span class="badge light">${tx('home.strip.new')}</span>` : ''}${esc(formatShortDate(new Date(n.date)))} · ${esc(n.source)}</div>
