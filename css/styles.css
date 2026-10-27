@@ -326,7 +326,7 @@ table.teams.compact { min-width: 0; }
   .topbar-inner { padding: 10px 16px; gap: 6px; }
   .search-row { padding: 0 16px 12px; }
   .brand { gap: 8px; }
-  .brand-name { font-size: 11px; line-height: 1.05; white-space: normal; max-width: 6.5em; }
+  .brand-name { font-size: 11px; font-stretch: 112%; }
   .brand-tag { display: none; }
   .game-switch { gap: 0; }
   .game-opt { padding: 4px 6px; letter-spacing: .02em; }

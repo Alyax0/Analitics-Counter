@@ -1,4 +1,4 @@
-# CS2STATS
+# Pickrate
 
 Partidos de **Counter-Strike 2**, **Valorant** y **Overwatch** en vivo, calendario, planteles, noticias y una predicción simple basada en la forma reciente de cada equipo. Los datos vienen de la API de [PandaScore](https://pandascore.co).
 

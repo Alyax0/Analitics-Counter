@@ -1,6 +1,6 @@
-// Marca del sitio. Provisoria: cambiar acá el nombre cambia la barra y el título.
+// Marca del sitio: cambiar acá el nombre cambia la barra y el título.
 export const BRAND = {
-  name: 'Analitics Counter',
+  name: 'Pickrate',
   tag: 'BETA',
 };
 

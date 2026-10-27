@@ -15,7 +15,7 @@ const DEXERTO_VAL_RSS = 'https://www.dexerto.com/feed/category/valorant/';
 const steamNewsUrl = (appid) =>
   `https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appid}&count=10&feeds=steam_community_announcements`;
 const TIMEOUT_MS = 6000;
-const UA = 'Mozilla/5.0 (compatible; CS2STATS/1.0; +https://analitics-counter.vercel.app)';
+const UA = 'Mozilla/5.0 (compatible; Pickrate/1.0; +https://analitics-counter.vercel.app)';
 
 const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", '#39': "'" };
 
