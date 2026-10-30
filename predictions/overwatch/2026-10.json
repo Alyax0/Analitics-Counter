@@ -1,0 +1,5 @@
+[
+{"id":1713126,"game":"overwatch","model":"winrate-v1","league":"OCS","tier":"c","format":"FT3","teamA":{"id":134476,"name":"Falcons"},"teamB":{"id":139323,"name":"SEIJI ESPORTS"},"scheduledAt":"2026-10-30T08:00:00.000Z","predictedAt":"2026-10-30T06:14:45.146Z","probA":58,"favorite":"A","confidence":"media","sample":{"a":10,"b":8},"status":"pending"},
+{"id":1713095,"game":"overwatch","model":"winrate-v1","league":"OCS","tier":"c","format":"FT3","teamA":{"id":135271,"name":"ZETA DIVISION"},"teamB":{"id":137303,"name":"Cheeseburger"},"scheduledAt":"2026-10-30T09:30:00.000Z","predictedAt":"2026-10-30T06:14:45.146Z","probA":61,"favorite":"A","confidence":"media","sample":{"a":10,"b":10},"status":"pending"},
+{"id":1713096,"game":"overwatch","model":"winrate-v1","league":"OCS","tier":"c","format":"FT3","teamA":{"id":134817,"name":"Crazy Raccoon"},"teamB":{"id":129810,"name":"T1"},"scheduledAt":"2026-10-30T11:00:00.000Z","predictedAt":"2026-10-30T06:14:45.146Z","probA":53,"favorite":"A","confidence":"baja","sample":{"a":10,"b":10},"status":"pending"}
+]
