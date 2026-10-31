@@ -1,0 +1,3 @@
+[
+{"id":1763038,"game":"cs2","model":"winrate-v1","league":"DFRAG Invitational","tier":"c","format":"BO5","teamA":{"id":134746,"name":"FlyQuest"},"teamB":{"id":135214,"name":"Alter Ego"},"scheduledAt":"2026-11-01T03:00:00.000Z","predictedAt":"2026-10-31T22:44:59.191Z","probA":56,"favorite":"A","confidence":"baja","sample":{"a":4,"b":4},"status":"pending"}
+]
