@@ -1,0 +1,3 @@
+[
+{"id":1713128,"game":"overwatch","model":"winrate-v1","league":"OCS","tier":"c","format":"FT3","teamA":{"id":139323,"name":"SEIJI ESPORTS"},"teamB":{"id":138767,"name":"ZANSIDE GAMING"},"scheduledAt":"2026-11-01T06:00:00.000Z","predictedAt":"2026-11-01T01:55:11.697Z","probA":45,"favorite":"B","confidence":"baja","sample":{"a":9,"b":10},"status":"pending"}
+]
