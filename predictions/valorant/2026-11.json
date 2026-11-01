@@ -1,0 +1,3 @@
+[
+{"id":1759553,"game":"valorant","model":"winrate-v1","league":"VCT","tier":"c","format":"BO5","teamA":{"id":138700,"name":"Unsettled Resentment"},"teamB":{"id":133287,"name":"Nova Esports"},"scheduledAt":"2026-11-01T09:00:00.000Z","predictedAt":"2026-11-01T08:50:16.161Z","probA":47,"favorite":"B","confidence":"baja","sample":{"a":10,"b":10},"status":"pending"}
+]
