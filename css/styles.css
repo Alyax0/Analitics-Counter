@@ -219,6 +219,28 @@ button.ev-team { cursor: pointer; }
 button.ev-team:hover { color: var(--accent); }
 .row-static { display: flex; justify-content: space-between; gap: 12px; width: 100%; }
 
+/* ---------- Transfers ---------- */
+.tr-day .section-label > span { color: var(--muted2); margin-left: 4px; }
+.tr-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) 30px; align-items: center; gap: 20px; padding: 14px 22px; background: var(--surface); }
+.tr-players { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.tr-player { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-stretch: 105%; font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: .02em; min-width: 0; }
+.tr-player a { text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tr-player a:hover { color: var(--accent); }
+.tr-player .flag { font-size: 14px; }
+.tr-roles { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.tr-move { display: grid; grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr); align-items: center; gap: 12px; }
+.tr-arrow { display: inline-flex; color: var(--accent); }
+.tr-team { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-width: 0; }
+.tr-team.none { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted2); }
+.tr-team-link { all: unset; display: inline-flex; align-items: center; gap: 8px; min-width: 0; font-size: 13px; font-weight: 600; }
+button.tr-team-link { cursor: pointer; }
+button.tr-team-link:hover .tr-team-name { color: var(--accent); }
+.tr-team-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.tr-team-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tr-sep { color: var(--muted2); }
+.tr-role { padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border2); font-family: var(--font-mono); font-size: 10px; font-weight: 500; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.tr-ref { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; color: var(--muted); }
+
 /* ---------- Tabla de equipos ---------- */
 .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
 table.teams { width: 100%; border-collapse: collapse; min-width: 520px; }
@@ -356,6 +378,8 @@ table.teams.compact { min-width: 0; }
 }
 @media (max-width: 600px) {
   .heading { font-size: 24px; }
+  .tr-row { grid-template-columns: minmax(0, 1fr) 30px; gap: 10px 12px; padding: 14px 16px; }
+  .tr-move { grid-column: 1 / -1; grid-row: 2; grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr); gap: 8px; }
   .event { grid-template-columns: auto minmax(0, 1fr); gap: 12px 14px; padding: 14px 16px; }
   .ev-side { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; text-align: left; }
   .ev-name { white-space: normal; font-size: 15px; }

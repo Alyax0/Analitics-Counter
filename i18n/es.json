@@ -7,6 +7,7 @@
     "partidos": "Partidos",
     "calendario": "Calendario",
     "torneos": "Torneos",
+    "transfers": "Transfers",
     "equipos": "Equipos",
     "noticias": "Noticias",
     "aciertos": "Aciertos",
@@ -53,6 +54,7 @@
     "matches": "No pudimos cargar los partidos",
     "news": "No pudimos cargar las noticias",
     "tourneys": "No pudimos cargar los torneos",
+    "transfers": "No pudimos cargar los transfers",
     "history": "No pudimos cargar el historial",
     "roster": "No se pudo cargar el plantel.",
     "demo": "No se pudo cargar el modo demo ({status})",
@@ -177,6 +179,30 @@
     "noPrize": "Premio sin confirmar",
     "teamsTitle": { "one": "{n} equipo", "other": "{n} equipos" },
     "noMatches": "Partidos por definir."
+  },
+  "transfers": {
+    "title": "Transfers",
+    "accent": "pases de jugadores",
+    "refreshAria": "Actualizar transfers",
+    "stale": "Mostrando pases guardados: no se pudieron actualizar ({error}).",
+    "filterAria": "Filtrar pases",
+    "chips": { "all": "Todos", "arrivals": "Llegadas", "departures": "Salidas" },
+    "noTeam": "Sin equipo",
+    "retired": "Retirado",
+    "to": "pasa a",
+    "refAria": "Ver el anuncio original",
+    "more": { "one": "Ver {n} pase más", "other": "Ver {n} pases más" },
+    "emptyTitle": "Sin pases",
+    "emptyText": "No hay pases de este tipo en los últimos meses.",
+    "missingTitle": "Todavía no hay pases",
+    "missingText": "Se cargan desde Liquipedia cada 6 horas. Volvé a mirar en un rato.",
+    "footnote": "Pases de {source}, con licencia {license}. Se actualizan cada 6 horas; la flecha abre el anuncio original.",
+    "roles": {
+      "coach": "Coach", "headCoach": "Head coach", "assistantCoach": "Asistente", "interimCoach": "Coach interino",
+      "inactive": "Inactivo", "loan": "Préstamo", "substitute": "Suplente", "standIn": "Stand-in", "manager": "Mánager",
+      "generalManager": "Gerente general", "analyst": "Analista", "streamer": "Streamer",
+      "tank": "Tank", "dps": "DPS", "support": "Support", "flex": "Flex"
+    }
   },
   "equipos": {
     "eyebrow": "Últimos resultados",

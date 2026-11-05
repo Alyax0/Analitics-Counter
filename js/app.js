@@ -1,5 +1,5 @@
 import { GAMES, DEFAULT_GAME } from './games.js';
-import { psGet, newsGet, summaryGet, clearLegacyCache, PREDICTIONS_REPO } from './api.js';
+import { psGet, newsGet, summaryGet, transfersGet, clearLegacyCache, PREDICTIONS_REPO } from './api.js';
 import { normalizeMatch, normalizeRoster, buildTeamStats, recentRecord, predict, headToHead, LABELS } from './model.js';
 import {
   esc, safeUrl, ago, dayKey, dayLabel, formatTime, formatShortDate, whenLabel, timezoneLabel,
@@ -9,12 +9,13 @@ import {
 import { t, setLang, preferredLang, getLang } from './i18n.js';
 import { viewHome } from './home.js';
 import { viewTorneos, buildEvents, eventModal } from './torneos.js';
+import { viewTransfers, TRANSFERS_PAGE } from './transfers.js';
 import { BRAND, BRAND_MARK } from './brand.js';
 import { ICONS } from './icons.js';
 
 const REFRESH_EVERY = 2 * 60 * 1000;
 // "calendario" es una vista de Partidos: no tiene pestaña propia
-const ROUTES = ['inicio', 'partidos', 'calendario', 'torneos', 'equipos', 'noticias', 'aciertos'];
+const ROUTES = ['inicio', 'partidos', 'calendario', 'torneos', 'transfers', 'equipos', 'noticias', 'aciertos'];
 // Con ?demo se usan siempre los datos guardados (game.demoFile)
 const FORCE_DEMO = new URLSearchParams(location.search).has('demo');
 
@@ -51,7 +52,10 @@ function gameState() {
     acc: { status: 'idle', data: null, error: null, loading: false },
     // Torneos: también se cargan al entrar a la sección
     tourneys: { status: 'idle', events: [], at: 0, stale: false, error: null, filter: null, loading: false },
+    // Transfers: también se cargan al entrar a la sección
+    transfers: { status: 'idle', data: null, at: 0, stale: false, error: null, filter: 'all', limit: TRANSFERS_PAGE, loading: false },
     rosters: new Map(), // teamId → plantel normalizado o { error }
+    teamNames: null,
     homeNews: 0, // noticia visible en el carrusel de la home
   };
 }
@@ -73,6 +77,7 @@ function setMatches(live, upcoming, past) {
     .filter((m) => m.status === 'finished')
     .sort((a, b) => (b.date || 0) - (a.date || 0));
   state.stats = buildTeamStats(state.past);
+  state.teamNames = null; // índice por nombre (teamByName): se rearma con los partidos nuevos
 }
 
 // Respaldo: datos reales capturados de PandaScore y guardados en el repo
@@ -306,6 +311,23 @@ async function loadTourneys({ force = false } = {}) {
   if (tor === state.tourneys && currentRoute() === 'torneos' && !state.query) render();
 }
 
+async function loadTransfers({ force = false } = {}) {
+  const tr = state.transfers;
+  if (tr.loading) return;
+  tr.loading = true;
+  if (tr.status !== 'ready') tr.status = 'loading';
+  try {
+    const r = await transfersGet(game.id, { force });
+    if (tr !== state.transfers) return; // cambió el juego
+    Object.assign(tr, { status: 'ready', data: r.data, at: r.at, stale: r.stale, error: r.error || null });
+  } catch (e) {
+    if (tr.status !== 'ready') tr.status = 'error';
+    tr.error = e.message;
+  }
+  tr.loading = false;
+  if (tr === state.transfers && currentRoute() === 'transfers' && !state.query) render();
+}
+
 // Planteles de los equipos pedidos que todavía no están cargados
 async function ensureRosters(ids) {
   const missing = ids.filter((id) => id && !state.rosters.has(id));
@@ -477,21 +499,33 @@ function viewCalendario() {
       </section>`).join('')}`;
 }
 
-// Encabezado de Torneos: "actualizado" y el botón de recarga son de los torneos, no de los partidos
-function torneosHeader(eyebrow, title, accent) {
-  const tor = state.tourneys;
-  return `
+// Encabezado de Torneos y Transfers: "actualizado" y el botón de recarga son de
+// esa sección, no de los partidos. at: momento de los datos que se muestran.
+function sectionHeader(sub, at, action, aria) {
+  return (eyebrow, title, accent) => `
     <div class="page-head">
       <div>
         <div class="eyebrow">${esc(eyebrow)}</div>
         <h1 class="heading">${esc(title)} <span>${esc(accent)}</span></h1>
       </div>
-      ${tor.status === 'ready' ? `
+      ${sub.status === 'ready' ? `
         <div class="updated">
-          <span>${esc(t('common.updated', { ago: ago(tor.at) }))}</span>
-          <button type="button" class="icon-btn ${tor.loading ? 'spinning' : ''}" data-action="refresh-tourneys" aria-label="${esc(t('torneos.refreshAria'))}" title="${esc(t('common.refresh'))}">↻</button>
+          <span>${esc(t('common.updated', { ago: ago(at) }))}</span>
+          <button type="button" class="icon-btn ${sub.loading ? 'spinning' : ''}" data-action="${action}" aria-label="${esc(t(aria))}" title="${esc(t('common.refresh'))}">↻</button>
         </div>` : ''}
     </div>`;
+}
+
+// Equipo de PandaScore con ese nombre (para mostrar su logo en Transfers)
+function teamByName(name) {
+  const key = name.toLowerCase();
+  if (!state.teamNames) {
+    state.teamNames = new Map();
+    for (const m of [...state.live, ...state.upcoming, ...state.past]) {
+      for (const team of [m.teamA, m.teamB]) if (team.id) state.teamNames.set(team.name.toLowerCase(), team);
+    }
+  }
+  return state.teamNames.get(key) || null;
 }
 
 function teamRows() {
@@ -723,11 +757,13 @@ function render() {
   if ((route === 'noticias' || home) && !state.query && state.news.status === 'idle') loadNews();
   if ((route === 'aciertos' || home) && !state.query && state.acc.status === 'idle') loadSummary();
   if (route === 'torneos' && !state.query && state.tourneys.status === 'idle') loadTourneys();
+  if (route === 'transfers' && !state.query && state.transfers.status === 'idle') loadTransfers();
 
   const busy =
     route === 'noticias' ? state.news.status === 'loading'
       : route === 'aciertos' ? state.acc.status === 'loading'
         : route === 'torneos' ? ['idle', 'loading'].includes(state.tourneys.status)
+          : route === 'transfers' ? ['idle', 'loading'].includes(state.transfers.status)
           : state.status === 'loading';
   app.setAttribute('aria-busy', String(busy));
   app.classList.toggle('is-home', home);
@@ -737,7 +773,11 @@ function render() {
       inicio: () => viewHome({ state, game, teamRows, notices: notices() }),
       partidos: viewPartidos,
       calendario: viewCalendario,
-      torneos: () => viewTorneos({ state, game, header: torneosHeader }),
+      torneos: () => viewTorneos({ state, game, header: sectionHeader(state.tourneys, state.tourneys.at, 'refresh-tourneys', 'torneos.refreshAria') }),
+      transfers: () => viewTransfers({
+        state, game, teamByName,
+        header: sectionHeader(state.transfers, Date.parse(state.transfers.data?.updatedAt) || state.transfers.at, 'refresh-transfers', 'transfers.refreshAria'),
+      }),
       equipos: viewEquipos,
       noticias: viewNoticias,
       aciertos: viewAciertos,
@@ -899,6 +939,12 @@ document.addEventListener('click', (e) => {
   const eventEl = e.target.closest('[data-event]');
   if (eventEl) return openEvent(eventEl.dataset.event);
 
+  const transferFilterEl = e.target.closest('[data-transfer-filter]');
+  if (transferFilterEl) {
+    Object.assign(state.transfers, { filter: transferFilterEl.dataset.transferFilter, limit: TRANSFERS_PAGE });
+    return render();
+  }
+
   const tourneyFilterEl = e.target.closest('[data-tourney-filter]');
   if (tourneyFilterEl) {
     state.tourneys.filter = tourneyFilterEl.dataset.tourneyFilter;
@@ -925,6 +971,14 @@ document.addEventListener('click', (e) => {
   }
   if (action === 'refresh-acc') {
     loadSummary({ force: true });
+    return render();
+  }
+  if (action === 'refresh-transfers') {
+    loadTransfers({ force: true });
+    return render();
+  }
+  if (action === 'more-transfers') {
+    state.transfers.limit += TRANSFERS_PAGE;
     return render();
   }
   if (action === 'refresh-tourneys') {
