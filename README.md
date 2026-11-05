@@ -7,7 +7,8 @@ Partidos de **Counter-Strike 2**, **Valorant** y **Overwatch** en vivo, calendar
 Cada juego tiene sus propias secciones, con rutas `#/cs2/...`, `#/valorant/...` y `#/overwatch/...`, y un selector arriba para cambiar de juego.
 
 - **Partidos:** en vivo, próximos y finalizados, con formato (BO1/BO3/BO5, o FT3/FT4 en Overwatch), marcador y probabilidad estimada.
-- **Calendario:** próximos partidos agrupados por día, en la zona horaria de quien visita.
+- **Calendario:** dentro de Partidos (vista "Calendario"), los próximos partidos agrupados por día, en la zona horaria de quien visita.
+- **Torneos:** en curso, próximos y terminados en los últimos 30 días, con nivel (S a D), fechas, lugar, premio y equipos. PandaScore divide cada evento en fases (grupos, playoffs); se agrupan por serie para mostrar un evento por fila, y al tocarlo se ven sus fases y partidos.
 - **Equipos en forma:** % de victorias en los últimos 10 partidos, calculado sobre los resultados recientes más el historial de los equipos que juegan pronto.
 - **Modo demo:** si la API no responde, se cargan datos reales capturados en `data/demo.json` (CS2), `data/demo-valorant.json` o `data/demo-overwatch.json`, con un aviso. Con `?demo` en la URL se fuerza ese modo.
 - **Detalle de partido:** forma de cada equipo, cruces recientes, planteles y enlace a la transmisión.
@@ -44,6 +45,7 @@ js/model.js       normalización de partidos, forma y predicción
 js/ui.js          formato y componentes HTML
 js/app.js         estado, vistas, ruteo por hash y eventos
 js/home.js        home de cada juego
+js/torneos.js     torneos agrupados por evento y su modal
 js/i18n.js        traducciones: t(clave), idioma guardado en el navegador
 i18n/*.json       textos de la interfaz en español e inglés
 api/ps.js         proxy serverless a PandaScore
