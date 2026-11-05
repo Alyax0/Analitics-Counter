@@ -6,6 +6,8 @@
     "inicio": "Home",
     "partidos": "Matches",
     "calendario": "Schedule",
+    "torneos": "Tournaments",
+    "transfers": "Transfers",
     "equipos": "Teams",
     "noticias": "News",
     "aciertos": "Accuracy",
@@ -51,6 +53,8 @@
   "errors": {
     "matches": "We couldn't load the matches",
     "news": "We couldn't load the news",
+    "tourneys": "We couldn't load the tournaments",
+    "transfers": "We couldn't load the transfers",
     "history": "We couldn't load the history",
     "roster": "Couldn't load the roster.",
     "demo": "Couldn't load demo mode ({status})",
@@ -120,6 +124,7 @@
   "partidos": {
     "title": "Matches",
     "accent": "live and upcoming",
+    "views": { "aria": "Match view", "lista": "List", "calendario": "Schedule" },
     "stats": {
       "live": "Live",
       "liveSub": "matches now",
@@ -146,6 +151,58 @@
     "emptyTitle": "Empty schedule",
     "emptyText": "There are no scheduled matches right now.",
     "liveNow": "Live now"
+  },
+  "torneos": {
+    "title": "Tournaments",
+    "accent": "this season",
+    "refreshAria": "Refresh tournaments",
+    "stale": "Showing saved tournaments: they couldn't be updated ({error}).",
+    "filterAria": "Filter tournaments",
+    "chips": { "top": "Top (S and A)", "all": "All" },
+    "blocks": { "live": "Ongoing", "upcoming": "Upcoming", "finished": "Finished" },
+    "emptyTitle": "No tournaments",
+    "empty": {
+      "top": "There are no S or A tier tournaments right now. Check all tournaments.",
+      "all": "PandaScore has no tournaments listed right now."
+    },
+    "footnote": "Tournaments from PandaScore. The tier (S to D) is assigned by PandaScore based on the event's importance.",
+    "online": "Online",
+    "regions": { "WEU": "Western Europe", "EEU": "Eastern Europe", "NA": "North America", "SA": "South America", "ASIA": "Asia", "OCE": "Oceania", "ME": "Middle East", "AF": "Africa" },
+    "tier": "{tier} tier",
+    "champion": "Champion: {team}",
+    "ended": "Ended {date}",
+    "endsOn": "Ends {date}",
+    "live": "Ongoing",
+    "startsToday": "Starts today",
+    "startsIn": { "one": "Starts tomorrow", "other": "Starts in {n} days" },
+    "teams": { "one": "{n} team", "other": "{n} teams" },
+    "noPrize": "Prize to be confirmed",
+    "teamsTitle": { "one": "{n} team", "other": "{n} teams" },
+    "noMatches": "Matches to be decided."
+  },
+  "transfers": {
+    "title": "Transfers",
+    "accent": "player moves",
+    "refreshAria": "Refresh transfers",
+    "stale": "Showing saved transfers: they couldn't be updated ({error}).",
+    "filterAria": "Filter transfers",
+    "chips": { "all": "All", "arrivals": "Arrivals", "departures": "Departures" },
+    "noTeam": "No team",
+    "retired": "Retired",
+    "to": "moves to",
+    "refAria": "See the original announcement",
+    "more": { "one": "Show {n} more transfer", "other": "Show {n} more transfers" },
+    "emptyTitle": "No transfers",
+    "emptyText": "There are no transfers of this kind in recent months.",
+    "missingTitle": "No transfers yet",
+    "missingText": "They're loaded from Liquipedia every 6 hours. Check back in a while.",
+    "footnote": "Transfers from {source}, licensed under {license}. Updated every 6 hours; the arrow opens the original announcement.",
+    "roles": {
+      "coach": "Coach", "headCoach": "Head coach", "assistantCoach": "Assistant coach", "interimCoach": "Interim coach",
+      "inactive": "Inactive", "loan": "Loan", "substitute": "Substitute", "standIn": "Stand-in", "manager": "Manager",
+      "generalManager": "General manager", "analyst": "Analyst", "streamer": "Streamer",
+      "tank": "Tank", "dps": "DPS", "support": "Support", "flex": "Flex"
+    }
   },
   "equipos": {
     "eyebrow": "Latest results",

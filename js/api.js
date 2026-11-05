@@ -72,6 +72,17 @@ export function summaryGet({ force = false } = {}) {
   });
 }
 
+// Pases de jugadores: los guarda el workflow de Liquipedia en la misma rama "data"
+const TRANSFERS_URL = (gameId) => `https://raw.githubusercontent.com/Alyax0/Analitics-Counter/data/transfers/${gameId}.json`;
+
+export function transfersGet(gameId, { force = false } = {}) {
+  return cachedJson(`${CACHE_PREFIX}transfers_${gameId}`, TRANSFERS_URL(encodeURIComponent(gameId)), {
+    ttl: 15 * 60 * 1000,
+    force,
+    validate: (b) => b && Array.isArray(b.items),
+  });
+}
+
 // Limpia entradas del formato viejo (ps_cache_*) que guardaban errores
 export function clearLegacyCache() {
   try {

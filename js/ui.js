@@ -25,6 +25,14 @@ function fmt(options) {
 
 export const formatTime = (d) => (d ? fmt({ hour: '2-digit', minute: '2-digit' }).format(d) : t('common.toConfirm'));
 export const formatShortDate = (d) => (d ? fmt({ day: 'numeric', month: 'short' }).format(d) : '');
+// "6–8 nov", "28 nov – 3 dic"; con año si no es el actual
+export function formatDateRange(a, b) {
+  if (!a) return t('common.dateToConfirm');
+  const year = new Date().getFullYear();
+  const opts = { day: 'numeric', month: 'short', ...(a.getFullYear() !== year || (b && b.getFullYear() !== year) ? { year: 'numeric' } : {}) };
+  const f = fmt(opts);
+  return b && b > a && typeof f.formatRange === 'function' ? f.formatRange(a, b) : f.format(a);
+}
 export const timezoneLabel = () =>
   fmt({ timeZoneName: 'short' }).formatToParts(new Date()).find((p) => p.type === 'timeZoneName')?.value || '';
 

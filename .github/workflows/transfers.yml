@@ -1,0 +1,60 @@
+# Cada 6 horas: lee los pases de jugadores de Liquipedia y los guarda en la
+# rama "data" (transfers/<juego>.json), que es lo que lee la sección Transfers.
+name: Transfers
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: transfers
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Preparar la rama data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git fetch --depth=1 origin data; then
+            git worktree add data-branch FETCH_HEAD
+            git -C data-branch checkout -B data
+          else
+            git worktree add --detach data-branch
+            git -C data-branch checkout --orphan data
+            git -C data-branch rm -rfq .
+          fi
+
+      - name: Actualizar transfers
+        run: node scripts/transfers.mjs --data data-branch
+
+      - name: Guardar en la rama data
+        working-directory: data-branch
+        run: |
+          git add -A transfers
+          if git diff --cached --quiet; then
+            echo "Sin cambios"
+            exit 0
+          fi
+          git commit -qm "Transfers $(date -u +'%Y-%m-%d %H:%M') UTC"
+          # El workflow de predicciones también escribe en esta rama: si se
+          # adelantó, se trae su commit (toca otros archivos) y se reintenta
+          for i in 1 2 3; do
+            git push origin data && exit 0
+            sleep 10
+            git pull --rebase -q origin data
+          done
+          exit 1

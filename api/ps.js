@@ -14,9 +14,26 @@ const PATHS = {
   'matches/upcoming': 300,
   'matches/past': 300,
   teams: 3600, // planteles: cambian poco
+  'tournaments/running': 600,
+  'tournaments/upcoming': 900,
+  'tournaments/past': 900,
 };
 
-const SORTS = new Set(['begin_at', '-begin_at', 'scheduled_at', '-scheduled_at']);
+const SORTS = new Set(['begin_at', '-begin_at', 'scheduled_at', '-scheduled_at', '-end_at']);
+
+// Los torneos traen planteles completos y mucho más: se devuelve solo lo que
+// usa la página para que la respuesta (y la caché del navegador) sea chica
+function slimTournament(x) {
+  const pick = (o, keys) => (o ? Object.fromEntries(keys.map((k) => [k, o[k] ?? null])) : null);
+  return {
+    ...pick(x, ['id', 'name', 'type', 'country', 'region', 'begin_at', 'end_at', 'tier', 'prizepool', 'winner_id', 'serie_id']),
+    league: pick(x.league, ['id', 'name', 'image_url']),
+    serie: pick(x.serie, ['id', 'name', 'full_name', 'year']),
+    teams: (x.teams || []).map((t) => pick(t, ['id', 'name', 'acronym', 'image_url', 'location'])),
+    matches: (x.matches || []).map((m) =>
+      pick(m, ['id', 'name', 'status', 'begin_at', 'scheduled_at', 'winner_id', 'number_of_games', 'match_type'])),
+  };
+}
 
 function buildParams(query) {
   const params = new URLSearchParams();
@@ -77,7 +94,7 @@ export default async function handler(req, res) {
 
     const ttl = PATHS[path];
     res.setHeader('Cache-Control', `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 4}`);
-    return res.status(200).json(data);
+    return res.status(200).json(path.startsWith('tournaments/') && Array.isArray(data) ? data.map(slimTournament) : data);
   } catch (e) {
     return res.status(502).json({ error: 'No se pudo contactar a PandaScore' });
   }

@@ -1,7 +1,7 @@
 // Configuración por juego. Para sumar otro juego de PandaScore alcanza con
 // agregar una entrada acá, su slug a la lista GAMES de api/ps.js, sus
-// fuentes de noticias en api/news.js y sus textos en i18n/*.json
-// (news.games.<id>).
+// fuentes de noticias en api/news.js, su wiki de Liquipedia (transfers) y
+// sus textos en i18n/*.json (news.games.<id>).
 export const GAMES = {
   cs2: {
     id: 'cs2',
@@ -11,6 +11,7 @@ export const GAMES = {
     accent: '#f5c542',
     demoFile: 'data/demo.json',
     newsSources: ['HLTV', 'Steam'],
+    liquipedia: 'counterstrike', // wiki de transfers (scripts/transfers.mjs)
   },
   valorant: {
     id: 'valorant',
@@ -20,6 +21,7 @@ export const GAMES = {
     accent: '#ff4655',
     demoFile: 'data/demo-valorant.json',
     newsSources: ['VLR', 'Dexerto'],
+    liquipedia: 'valorant',
   },
   overwatch: {
     id: 'overwatch',
@@ -29,6 +31,7 @@ export const GAMES = {
     accent: '#f99e1a',
     demoFile: 'data/demo-overwatch.json',
     newsSources: ['Steam', 'Dexerto'],
+    liquipedia: 'overwatch',
   },
 };
 
