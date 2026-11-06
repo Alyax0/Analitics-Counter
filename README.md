@@ -51,6 +51,7 @@ js/model.js       normalización de partidos, forma y predicción
 js/ui.js          formato y componentes HTML
 js/app.js         estado, vistas, ruteo por hash y eventos
 js/home.js        home de cada juego
+js/partidos.js    sección Partidos (destacado por región, días, resultados)
 js/torneos.js     torneos agrupados por evento y su modal
 js/transfers.js   pases de jugadores (lee la rama data)
 js/i18n.js        traducciones: t(clave), idioma guardado en el navegador
