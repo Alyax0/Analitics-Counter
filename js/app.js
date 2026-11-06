@@ -2,7 +2,7 @@ import { GAMES, DEFAULT_GAME } from './games.js';
 import { psGet, newsGet, summaryGet, transfersGet, clearLegacyCache, PREDICTIONS_REPO } from './api.js';
 import { normalizeMatch, normalizeRoster, buildTeamStats, recentRecord, predict, headToHead, LABELS } from './model.js';
 import {
-  esc, safeUrl, ago, dayKey, dayLabel, formatTime, formatShortDate, whenLabel, timezoneLabel,
+  esc, safeUrl, dayKey, dayLabel, formatTime, formatShortDate, whenLabel, timezoneLabel,
   teamLogo, formDots, probBar, matchCard, skeletonList, skeletonStats, emptyState, errorState,
   rosterGrid, newsCard, newsHero, confLevel,
 } from './ui.js';
@@ -124,8 +124,6 @@ async function load({ force = false } = {}) {
   if (state.status !== 'ready') {
     state.status = 'loading';
     render();
-  } else {
-    setRefreshing(true);
   }
 
   if (FORCE_DEMO) {
@@ -381,16 +379,19 @@ function currentRoute() {
   return parseHash().route;
 }
 
-function header(eyebrow, title, accent) {
+function pageHead(eyebrow, title, accent) {
   return `
     <div class="page-head">
       <div>
         <div class="eyebrow">${esc(eyebrow)}</div>
         <h1 class="heading">${esc(title)} <span>${esc(accent)}</span></h1>
       </div>
-      ${state.status === 'ready' ? updatedBadge() : ''}
-    </div>
-    ${notices()}`;
+    </div>`;
+}
+
+// Encabezado de las secciones que usan los partidos, con sus avisos
+function header(eyebrow, title, accent) {
+  return pageHead(eyebrow, title, accent) + notices();
 }
 
 // Avisos de modo demo o de datos guardados (los usan las páginas y la home)
@@ -414,21 +415,8 @@ function captureLabel() {
   return `${formatShortDate(state.demo)} ${state.demo.getFullYear()}, ${formatTime(state.demo)}`;
 }
 
-function updatedText() {
-  return state.demo ? t('common.demoData') : t('common.updated', { ago: ago(state.at) });
-}
 
-function updatedBadge() {
-  return `
-    <div class="updated">
-      <span id="updated-text">${esc(updatedText())}</span>
-      <button type="button" class="icon-btn ${state.loading ? 'spinning' : ''}" id="refresh-btn" data-action="refresh" aria-label="${esc(t('common.refreshData'))}" title="${esc(t('common.refresh'))}">↻</button>
-    </div>`;
-}
 
-function setRefreshing(on) {
-  document.getElementById('refresh-btn')?.classList.toggle('spinning', on);
-}
 
 function withPred(m) {
   return matchCard(m, m.status === 'upcoming' || m.status === 'live' ? predict(m, state.stats) : null);
@@ -448,7 +436,6 @@ function viewSwitch(active) {
 function viewPartidos() {
   return viewPartidosPage({
     state, game, withPred,
-    updated: updatedBadge(),
     notices: notices(),
     viewSwitch: viewSwitch('partidos'),
   });
@@ -483,23 +470,6 @@ function viewCalendario() {
             </button>`).join('')}
         </div>
       </section>`).join('')}`;
-}
-
-// Encabezado de Torneos y Transfers: "actualizado" y el botón de recarga son de
-// esa sección, no de los partidos. at: momento de los datos que se muestran.
-function sectionHeader(sub, at, action, aria) {
-  return (eyebrow, title, accent) => `
-    <div class="page-head">
-      <div>
-        <div class="eyebrow">${esc(eyebrow)}</div>
-        <h1 class="heading">${esc(title)} <span>${esc(accent)}</span></h1>
-      </div>
-      ${sub.status === 'ready' ? `
-        <div class="updated">
-          <span>${esc(t('common.updated', { ago: ago(at) }))}</span>
-          <button type="button" class="icon-btn ${sub.loading ? 'spinning' : ''}" data-action="${action}" aria-label="${esc(t(aria))}" title="${esc(t('common.refresh'))}">↻</button>
-        </div>` : ''}
-    </div>`;
 }
 
 // Equipo de PandaScore con ese nombre (para mostrar su logo en Transfers)
@@ -564,11 +534,6 @@ function viewNoticias() {
         <div class="eyebrow">● ${esc(t(`news.games.${game.id}.eyebrow`))}</div>
         <h1 class="heading">${esc(t('news.title'))} <span>${esc(t('news.accent'))}</span></h1>
       </div>
-      ${news.status === 'ready' ? `
-        <div class="updated">
-          <span>${esc(t('common.updated', { ago: ago(news.at) }))}</span>
-          <button type="button" class="icon-btn ${news.loading ? 'spinning' : ''}" data-action="refresh-news" aria-label="${esc(t('news.refreshAria'))}" title="${esc(t('common.refresh'))}">↻</button>
-        </div>` : ''}
     </div>`;
   if (news.status === 'idle' || news.status === 'loading') {
     return head + `<div class="news-grid" aria-hidden="true">${'<div class="skeleton-card"><span class="sk w30"></span><span class="sk w60"></span><span class="sk w40"></span></div>'.repeat(6)}</div>`;
@@ -643,7 +608,6 @@ function viewAciertos() {
         <div class="eyebrow">● ${esc(t('aciertos.eyebrow'))}</div>
         <h1 class="heading">${esc(t('aciertos.title'))} <span>${esc(t('aciertos.accent'))}</span></h1>
       </div>
-      ${acc.status === 'ready' && acc.data.updatedAt ? `<div class="updated"><span>${esc(t('aciertos.lastChange', { ago: ago(Date.parse(acc.data.updatedAt)) }))}</span></div>` : ''}
     </div>`;
   if (acc.status === 'idle' || acc.status === 'loading') return head + skeletonStats() + skeletonList(4);
   if (acc.status === 'error') {
@@ -759,11 +723,8 @@ function render() {
       inicio: () => viewHome({ state, game, teamRows, notices: notices() }),
       partidos: viewPartidos,
       calendario: viewCalendario,
-      torneos: () => viewTorneos({ state, game, header: sectionHeader(state.tourneys, state.tourneys.at, 'refresh-tourneys', 'torneos.refreshAria') }),
-      transfers: () => viewTransfers({
-        state, game, teamByName,
-        header: sectionHeader(state.transfers, Date.parse(state.transfers.data?.updatedAt) || state.transfers.at, 'refresh-transfers', 'transfers.refreshAria'),
-      }),
+      torneos: () => viewTorneos({ state, game, header: pageHead }),
+      transfers: () => viewTransfers({ state, game, teamByName, header: pageHead }),
       equipos: viewEquipos,
       noticias: viewNoticias,
       aciertos: viewAciertos,
@@ -1053,10 +1014,6 @@ window.addEventListener('hashchange', () => {
 
 document.addEventListener('visibilitychange', maybeRefresh);
 setInterval(maybeRefresh, 30 * 1000);
-setInterval(() => {
-  const el = document.getElementById('updated-text');
-  if (el && state.at) el.textContent = updatedText();
-}, 30 * 1000);
 
 // ===================== INICIO =====================
 

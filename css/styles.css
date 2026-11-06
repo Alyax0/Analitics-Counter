@@ -100,11 +100,8 @@ main.container.is-home { max-width: none; padding: 0; }
 .footer-note { max-width: 120ch; line-height: 1.6; color: var(--muted2); }
 .footer-note + .footer-note { margin-top: 6px; }
 
-.updated { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
 .icon-btn { width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border2); background: var(--surface); cursor: pointer; font-size: 15px; line-height: 1; }
 .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
-.icon-btn.spinning { animation: spin .8s linear infinite; pointer-events: none; }
-@keyframes spin { to { transform: rotate(360deg); } }
 
 .notice { background: color-mix(in srgb, #eab308 10%, transparent); border: 1px solid color-mix(in srgb, #eab308 40%, transparent); color: #fde68a; border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 20px; }
 .notice.demo { background: var(--accent-dim); border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--text); }
@@ -199,7 +196,6 @@ main.container.is-home { max-width: none; padding: 0; }
 .pm-head-text { position: relative; }
 .pm-title { margin-top: 12px; font-family: var(--font-display); font-stretch: 125%; font-weight: 900; font-size: clamp(44px, 7vw, 96px); line-height: .9; letter-spacing: -.02em; text-transform: uppercase; }
 .pm-head .hero-facts { margin-top: 20px; }
-.pm-head .updated { position: relative; align-self: flex-start; }
 /* Logo del equipo destacado, grande y con un halo del color del juego */
 .pm-art { position: absolute; right: 4%; top: 50%; transform: translateY(-50%); pointer-events: none; }
 .pm-art img { width: 180px; height: 180px; object-fit: contain; filter: drop-shadow(0 0 40px color-mix(in srgb, var(--accent) 45%, transparent)); }
