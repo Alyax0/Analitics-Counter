@@ -128,20 +128,33 @@
   },
   "partidos": {
     "title": "Partidos",
-    "accent": "en vivo y próximos",
     "views": { "aria": "Vista de partidos", "lista": "Lista", "calendario": "Calendario" },
-    "stats": {
-      "live": "En vivo",
-      "liveSub": "partidos ahora",
-      "next24": "Próximas 24 h",
-      "next24Sub": "partidos programados",
-      "leagues": "Ligas activas",
-      "leaguesSub": "en vivo o en 24 h",
-      "withPred": "Con predicción",
-      "withPredSub": "próximos con datos"
+    "listTitle": "Próximos partidos",
+    "resultsTitle": "Resultados",
+    "showAll": "Mostrar todos los resultados",
+    "resultsCount": { "one": "{n} partido", "other": "{n} partidos" },
+    "tz": "Horarios en tu hora local ({tz})",
+    "next": "Próximo partido",
+    "liveNow": "En vivo ahora",
+    "noFeatured": "No hay partidos con los dos equipos confirmados en esta región.",
+    "predNote": "Predicción del modelo por forma reciente · confianza {level}",
+    "startsSoon": "Empieza en minutos",
+    "startsIn": {
+      "min": { "one": "Empieza en {n} min", "other": "Empieza en {n} min" },
+      "hours": { "one": "Empieza en {n} h", "other": "Empieza en {n} h" },
+      "days": { "one": "Empieza mañana", "other": "Empieza en {n} días" }
     },
-    "filterAria": "Filtrar partidos",
-    "chips": { "all": "Todos", "live": "En vivo", "upcoming": "Próximos", "finished": "Finalizados" },
+    "watch": "Ver la transmisión",
+    "watchOn": "Verlo en {where}",
+    "regionAria": "Elegir región",
+    "regions": { "all": "Todas", "eu": "Europa", "na": "Norteamérica", "sa": "Sudamérica", "asia": "Asia", "oce": "Oceanía", "me": "Medio Oriente", "af": "África" },
+    "facts": {
+      "live": "<strong>{n}</strong> en vivo",
+      "next24": "<strong>{n}</strong> en 24 h",
+      "leagues": { "one": "<strong>{n}</strong> liga activa", "other": "<strong>{n}</strong> ligas activas" },
+      "withPred": "<strong>{n}</strong>/{total} con predicción"
+    },    "filterAria": "Filtrar partidos",
+    "chips": { "all": "Todos", "live": "En vivo", "upcoming": "Próximos" },
     "empty": {
       "all": { "title": "Sin partidos", "text": "PandaScore no devolvió partidos por ahora." },
       "live": { "title": "No hay partidos en vivo", "text": "Mirá los próximos partidos o el calendario completo." },

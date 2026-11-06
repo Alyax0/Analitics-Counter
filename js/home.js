@@ -18,7 +18,7 @@ const tx = (key, params) => esc(t(key, params));
 
 // Partido para destacar: el en vivo de mayor nivel; si no hay, el próximo de
 // mayor nivel en las próximas 48 h (o el más cercano con rivales definidos)
-function pickFeatured(state, now) {
+export function pickFeatured(state, now) {
   const live = state.live.filter(bothTeams).sort((a, b) => tierOf(b) - tierOf(a));
   if (live.length) return live[0];
   const withTeams = state.upcoming.filter((m) => bothTeams(m) && m.date);
