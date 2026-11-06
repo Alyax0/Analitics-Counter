@@ -116,7 +116,7 @@ function results(matches, ctx) {
   }).join('');
 }
 
-// ctx: { state, game, withPred, updated (html), notices (html), viewSwitch (html) }
+// ctx: { state, game, withPred, notices (html), viewSwitch (html) }
 export function viewPartidos(ctx) {
   const { state, game } = ctx;
   const titleBlock = (eyebrow, facts, art) => `
@@ -127,7 +127,6 @@ export function viewPartidos(ctx) {
         <h1 class="pm-title">${esc(t('partidos.title'))}</h1>
         ${facts}
       </div>
-      ${state.status === 'ready' ? ctx.updated : ''}
     </section>
     ${ctx.viewSwitch}
     ${ctx.notices}`;

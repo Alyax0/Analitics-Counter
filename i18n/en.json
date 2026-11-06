@@ -32,10 +32,6 @@
     "owners": { "cs2": "Valve Corporation", "valorant": "Riot Games", "overwatch": "Blizzard Entertainment" }
   },  "common": {
     "retry": "Retry",
-    "refresh": "Refresh",
-    "refreshData": "Refresh data",
-    "updated": "Updated {ago}",
-    "demoData": "Demo data",
     "noData": "No data",
     "tbd": "TBD",
     "tournament": "Tournament",
@@ -100,7 +96,6 @@
     "kind": { "news": "News", "update": "Update" },
     "title": "News",
     "accent": "& updates",
-    "refreshAria": "Refresh news",
     "stale": "Showing saved news: they couldn't be updated ({error}).",
     "failed": "Couldn't load {sources} right now; showing the other sources.",
     "filterAria": "Filter news",
@@ -173,7 +168,6 @@
   "torneos": {
     "title": "Tournaments",
     "accent": "this season",
-    "refreshAria": "Refresh tournaments",
     "stale": "Showing saved tournaments: they couldn't be updated ({error}).",
     "filterAria": "Filter tournaments",
     "chips": { "top": "Top (S and A)", "all": "All" },
@@ -201,7 +195,6 @@
   "transfers": {
     "title": "Transfers",
     "accent": "player moves",
-    "refreshAria": "Refresh transfers",
     "stale": "Showing saved transfers: they couldn't be updated ({error}).",
     "filterAria": "Filter transfers",
     "chips": { "all": "All", "arrivals": "Arrivals", "departures": "Departures" },
@@ -235,7 +228,6 @@
     "eyebrow": "Verifiable history",
     "title": "Model",
     "accent": "accuracy",
-    "lastChange": "Last change {ago}",
     "notStartedTitle": "The log hasn't started yet",
     "notStartedText": "The first automatic run creates the history. Check back in a while.",
     "footnote": "Each prediction is saved a few hours before the match and never changed afterwards; if it was saved after the start, it's voided. Canceled matches, forfeits and draws don't count. Model {model}. The whole log is in the {link}.",

@@ -32,10 +32,6 @@
     "owners": { "cs2": "Valve Corporation", "valorant": "Riot Games", "overwatch": "Blizzard Entertainment" }
   },  "common": {
     "retry": "Reintentar",
-    "refresh": "Actualizar",
-    "refreshData": "Actualizar datos",
-    "updated": "Actualizado {ago}",
-    "demoData": "Datos de demo",
     "noData": "Sin datos",
     "tbd": "Por definir",
     "tournament": "Torneo",
@@ -100,7 +96,6 @@
     "kind": { "news": "Noticia", "update": "Actualización" },
     "title": "Noticias",
     "accent": "& actualizaciones",
-    "refreshAria": "Actualizar noticias",
     "stale": "Mostrando noticias guardadas: no se pudieron actualizar ({error}).",
     "failed": "No se pudo cargar {sources} por ahora; se muestran las demás fuentes.",
     "filterAria": "Filtrar noticias",
@@ -173,7 +168,6 @@
   "torneos": {
     "title": "Torneos",
     "accent": "de la temporada",
-    "refreshAria": "Actualizar torneos",
     "stale": "Mostrando torneos guardados: no se pudieron actualizar ({error}).",
     "filterAria": "Filtrar torneos",
     "chips": { "top": "Principales (S y A)", "all": "Todos" },
@@ -201,7 +195,6 @@
   "transfers": {
     "title": "Transfers",
     "accent": "pases de jugadores",
-    "refreshAria": "Actualizar transfers",
     "stale": "Mostrando pases guardados: no se pudieron actualizar ({error}).",
     "filterAria": "Filtrar pases",
     "chips": { "all": "Todos", "arrivals": "Llegadas", "departures": "Salidas" },
@@ -235,7 +228,6 @@
     "eyebrow": "Historial verificable",
     "title": "Aciertos",
     "accent": "del modelo",
-    "lastChange": "Último cambio {ago}",
     "notStartedTitle": "El registro todavía no empezó",
     "notStartedText": "La primera ejecución automática crea el historial. Volvé a mirar en un rato.",
     "footnote": "Cada predicción se guarda unas horas antes del partido y no se modifica después; si quedó guardada después del inicio, se anula. Cancelados, W.O. y empates no cuentan. Modelo {model}. Todo el registro está en el {link}.",
