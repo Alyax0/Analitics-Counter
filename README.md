@@ -6,7 +6,7 @@ Partidos de **Counter-Strike 2**, **Valorant** y **Overwatch** en vivo, calendar
 
 Cada juego tiene sus propias secciones, con rutas `#/cs2/...`, `#/valorant/...` y `#/overwatch/...`, y un selector arriba para cambiar de juego.
 
-- **Partidos:** en vivo, próximos y finalizados, con formato (BO1/BO3/BO5, o FT3/FT4 en Overwatch), marcador y probabilidad estimada.
+- **Partidos:** encabezado grande con el próximo partido destacado (pestañas por región, predicción y enlace a la transmisión), partidos por día en la hora local y resultados por día desplegables. Formato BO1/BO3/BO5 (o FT3/FT4 en Overwatch), marcador y probabilidad estimada.
 - **Calendario:** dentro de Partidos (vista "Calendario"), los próximos partidos agrupados por día, en la zona horaria de quien visita.
 - **Torneos:** en curso, próximos y terminados en los últimos 30 días, con nivel (S a D), fechas, lugar, premio y equipos. PandaScore divide cada evento en fases (grupos, playoffs); se agrupan por serie para mostrar un evento por fila, y al tocarlo se ven sus fases y partidos.
 - **Transfers:** pases de jugadores de los últimos 120 días (equipo anterior → equipo nuevo, con rol), agrupados por día y con enlace al anuncio original. Vienen de Liquipedia (CC BY-SA 3.0) y los guarda un workflow; ver más abajo.
@@ -51,6 +51,7 @@ js/model.js       normalización de partidos, forma y predicción
 js/ui.js          formato y componentes HTML
 js/app.js         estado, vistas, ruteo por hash y eventos
 js/home.js        home de cada juego
+js/partidos.js    sección Partidos (destacado por región, días, resultados)
 js/torneos.js     torneos agrupados por evento y su modal
 js/transfers.js   pases de jugadores (lee la rama data)
 js/i18n.js        traducciones: t(clave), idioma guardado en el navegador

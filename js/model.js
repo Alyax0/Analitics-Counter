@@ -64,6 +64,7 @@ export function normalizeMatch(m) {
     serie: (m.serie && (m.serie.full_name || m.serie.name)) || '',
     stage: (m.tournament && m.tournament.name) || '',
     tier: (m.tournament && m.tournament.tier) || null,
+    region: (m.tournament && m.tournament.region) || null, // WEU, EEU, NA, SA, ASIA, OCE...
     format: formatLabel(m),
     // "Mapa x de y": en FT3 se juegan hasta 5 mapas
     bestOf: m.match_type === 'first_to' ? (m.number_of_games || 1) * 2 - 1 : m.number_of_games || 1,

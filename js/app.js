@@ -10,6 +10,7 @@ import { t, setLang, preferredLang, getLang } from './i18n.js';
 import { viewHome } from './home.js';
 import { viewTorneos, buildEvents, eventModal } from './torneos.js';
 import { viewTransfers, TRANSFERS_PAGE } from './transfers.js';
+import { viewPartidos as viewPartidosPage } from './partidos.js';
 import { BRAND, BRAND_MARK } from './brand.js';
 import { ICONS } from './icons.js';
 
@@ -45,6 +46,9 @@ function gameState() {
     past: [],
     stats: new Map(),
     filter: 'all',
+    region: 'all', // pestaña de región en Partidos
+    allResults: false, // "Mostrar todos los resultados"
+    openDays: new Map(), // días de resultados abiertos o cerrados a mano
     loading: false,
     // Noticias: se cargan recién al entrar a la sección
     news: { status: 'idle', items: [], sources: {}, at: 0, stale: false, error: null, filter: 'all' },
@@ -442,49 +446,12 @@ function viewSwitch(active) {
 }
 
 function viewPartidos() {
-  const head = header('● ' + game.name, t('partidos.title'), t('partidos.accent')) + viewSwitch('partidos');
-  if (state.status === 'loading') return head + skeletonStats() + skeletonList(6);
-  if (state.status === 'error') return head + errorState(state.error);
-
-  // En demo, "próximas 24 h" se cuenta desde el momento de la captura
-  const now = state.demo ? state.demo.getTime() : Date.now();
-  const next24 = state.upcoming.filter((m) => m.date && m.date - now < 24 * 3600 * 1000);
-  const leagues = new Set([...state.live, ...next24].map((m) => m.league));
-  const finished = state.past.slice(0, 15);
-  const upcoming = state.upcoming.slice(0, 20);
-  const predictable = upcoming.filter((m) => {
-    const p = predict(m, state.stats);
-    return p && !p.insufficient;
-  }).length;
-
-  const groups = {
-    all: [...state.live, ...upcoming, ...finished],
-    live: state.live,
-    upcoming,
-    finished,
-  };
-  const shown = groups[state.filter];
-  const chip = (id, count) =>
-    `<button type="button" class="chip ${state.filter === id ? 'active' : ''}" data-filter="${id}" aria-pressed="${state.filter === id}">${esc(t(`partidos.chips.${id}`))} <span>${count}</span></button>`;
-  const stat = (key, value, accent = false) => `
-    <div class="stat-item"><div class="s-label">${esc(t(`partidos.stats.${key}`))}</div><div class="s-val ${accent ? 'accent' : ''}">${value}</div><div class="s-sub">${esc(t(`partidos.stats.${key}Sub`))}</div></div>`;
-
-  return `
-    ${head}
-    <div class="stat-row">
-      ${stat('live', state.live.length, true)}
-      ${stat('next24', next24.length)}
-      ${stat('leagues', leagues.size)}
-      ${stat('withPred', `${predictable}<small>/${upcoming.length}</small>`)}
-    </div>
-    <div class="chips" role="group" aria-label="${esc(t('partidos.filterAria'))}">
-      ${chip('all', groups.all.length)}
-      ${chip('live', groups.live.length)}
-      ${chip('upcoming', groups.upcoming.length)}
-      ${chip('finished', groups.finished.length)}
-    </div>
-    ${shown.length ? list(shown) : emptyState(t(`partidos.empty.${state.filter}.title`), t(`partidos.empty.${state.filter}.text`))}
-    <p class="footnote">${esc(t('partidos.footnote', { n: state.past.length }))}</p>`;
+  return viewPartidosPage({
+    state, game, withPred,
+    updated: updatedBadge(),
+    notices: notices(),
+    viewSwitch: viewSwitch('partidos'),
+  });
 }
 
 function viewCalendario() {
@@ -976,6 +943,13 @@ document.addEventListener('click', (e) => {
     return render();
   }
 
+  const regionEl = e.target.closest('[data-region]');
+  if (regionEl) {
+    state.region = regionEl.dataset.region;
+    state.openDays.clear();
+    return render();
+  }
+
   const newsFilterEl = e.target.closest('[data-news-filter]');
   if (newsFilterEl) {
     state.news.filter = newsFilterEl.dataset.newsFilter;
@@ -984,6 +958,10 @@ document.addEventListener('click', (e) => {
 
   const action = e.target.closest('[data-action]')?.dataset.action;
   if (action === 'retry' || action === 'refresh') return load({ force: true });
+  if (action === 'all-results') {
+    state.allResults = e.target.checked;
+    return render();
+  }
   if (action === 'refresh-news') {
     loadNews({ force: true });
     return render();
@@ -1049,6 +1027,12 @@ searchInput.addEventListener('keydown', (e) => {
   document.querySelector('.search-toggle').focus();
   render();
 });
+
+// Resultados por día: se recuerda cuáles abrió o cerró la persona para que la
+// actualización automática no los vuelva a su estado inicial ("toggle" no burbujea)
+document.addEventListener('toggle', (e) => {
+  if (e.target.matches?.('details[data-day]')) state.openDays.set(e.target.dataset.day, e.target.open);
+}, true);
 
 // Clic en el fondo del <dialog> lo cierra
 modal.addEventListener('click', (e) => {

@@ -128,20 +128,33 @@
   },
   "partidos": {
     "title": "Matches",
-    "accent": "live and upcoming",
     "views": { "aria": "Match view", "lista": "List", "calendario": "Schedule" },
-    "stats": {
-      "live": "Live",
-      "liveSub": "matches now",
-      "next24": "Next 24 h",
-      "next24Sub": "scheduled matches",
-      "leagues": "Active leagues",
-      "leaguesSub": "live or within 24 h",
-      "withPred": "With prediction",
-      "withPredSub": "upcoming with data"
+    "listTitle": "Upcoming matches",
+    "resultsTitle": "Results",
+    "showAll": "Show all results",
+    "resultsCount": { "one": "{n} match", "other": "{n} matches" },
+    "tz": "Times in your local time zone ({tz})",
+    "next": "Next match",
+    "liveNow": "Live now",
+    "noFeatured": "There are no matches with both teams confirmed in this region.",
+    "predNote": "Model prediction from recent form · {level} confidence",
+    "startsSoon": "Starts in minutes",
+    "startsIn": {
+      "min": { "one": "Starts in {n} min", "other": "Starts in {n} min" },
+      "hours": { "one": "Starts in {n} h", "other": "Starts in {n} h" },
+      "days": { "one": "Starts tomorrow", "other": "Starts in {n} days" }
     },
-    "filterAria": "Filter matches",
-    "chips": { "all": "All", "live": "Live", "upcoming": "Upcoming", "finished": "Finished" },
+    "watch": "Watch the stream",
+    "watchOn": "Watch on {where}",
+    "regionAria": "Choose region",
+    "regions": { "all": "All", "eu": "Europe", "na": "North America", "sa": "South America", "asia": "Asia", "oce": "Oceania", "me": "Middle East", "af": "Africa" },
+    "facts": {
+      "live": "<strong>{n}</strong> live",
+      "next24": "<strong>{n}</strong> in 24 h",
+      "leagues": { "one": "<strong>{n}</strong> active league", "other": "<strong>{n}</strong> active leagues" },
+      "withPred": "<strong>{n}</strong>/{total} with prediction"
+    },    "filterAria": "Filter matches",
+    "chips": { "all": "All", "live": "Live", "upcoming": "Upcoming" },
     "empty": {
       "all": { "title": "No matches", "text": "PandaScore didn't return any matches right now." },
       "live": { "title": "No live matches", "text": "Check the upcoming matches or the full schedule." },
