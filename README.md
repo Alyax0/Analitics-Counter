@@ -10,6 +10,7 @@ Cada juego tiene sus propias secciones, con rutas `#/cs2/...`, `#/valorant/...` 
 - **Calendario:** dentro de Partidos (vista "Calendario"), los próximos partidos agrupados por día, en la zona horaria de quien visita.
 - **Torneos:** en curso, próximos y terminados en los últimos 30 días, con nivel (S a D), fechas, lugar, premio y equipos. PandaScore divide cada evento en fases (grupos, playoffs); se agrupan por serie para mostrar un evento por fila, y al tocarlo se ven sus fases y partidos.
 - **Transfers:** pases de jugadores de los últimos 120 días (equipo anterior → equipo nuevo, con rol), agrupados por día y con enlace al anuncio original. Vienen de Liquipedia (CC BY-SA 3.0) y los guarda un workflow; ver más abajo.
+- **Portada con arte oficial:** la imagen de Steam de CS2 y de Overwatch, y un agente de Valorant (arte de Riot servido por valorant-api.com). Se cargan desde esos servidores; si fallan, vuelven los logos del partido destacado. El pie aclara que es un proyecto de fans y de dónde viene cada dato.
 - **Equipos en forma:** % de victorias en los últimos 10 partidos, calculado sobre los resultados recientes más el historial de los equipos que juegan pronto.
 - **Modo demo:** si la API no responde, se cargan datos reales capturados en `data/demo.json` (CS2), `data/demo-valorant.json` o `data/demo-overwatch.json`, con un aviso. Con `?demo` en la URL se fuerza ese modo.
 - **Detalle de partido:** forma de cada equipo, cruces recientes, planteles y enlace a la transmisión.

@@ -187,6 +187,28 @@ function switchGame(gameId) {
 function applyGame() {
   document.documentElement.style.setProperty('--accent', game.accent);
   document.title = t('meta.title', { brand: BRAND.name, game: game.name });
+  renderFooter();
+}
+
+const extLink = (url, label) => `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`;
+
+// Pie: aviso de proyecto de fans y de dónde viene cada dato del juego actual
+function renderFooter() {
+  const news = Object.entries(game.newsLinks || {}).map(([id, url]) => extLink(url, t(`news.games.${game.id}.sources.${id}`)));
+  const art = game.art ? extLink(game.art.credit[1], game.art.credit[0]) : '';
+  const sources = [
+    ['footer.matches', extLink('https://pandascore.co', 'PandaScore')],
+    ['footer.transfers', `${extLink(`https://liquipedia.net/${game.liquipedia}/`, 'Liquipedia')} (${extLink('https://creativecommons.org/licenses/by-sa/3.0/', 'CC BY-SA 3.0')})`],
+    ['footer.news', news.join(', ')],
+    ['footer.art', art],
+  ].filter(([, v]) => v);
+  document.getElementById('footer-content').innerHTML = `
+    <div class="footer-top">
+      <span class="footer-brand">© ${new Date().getFullYear()} ${esc(BRAND.name)}</span>
+      <ul class="footer-sources">${sources.map(([key, v]) => `<li><span>${esc(t(key))}</span> ${v}</li>`).join('')}</ul>
+    </div>
+    <p class="footer-note">${esc(t('footer.disclaimer', { game: game.name, owner: t(`footer.owners.${game.id}`) }))}</p>
+    <p class="footer-note">${esc(t('footer.bets'))}</p>`;
 }
 
 // Cada idioma se nombra en su propio idioma
@@ -220,9 +242,6 @@ function applyStaticTexts() {
   searchInput.placeholder = t('nav.searchPlaceholder');
   modal.setAttribute('aria-label', t('nav.matchDetail'));
   document.querySelector('.modal-close').setAttribute('aria-label', t('nav.close'));
-  document.getElementById('footer-text').innerHTML = t('footer.data', {
-    link: '<a href="https://pandascore.co" target="_blank" rel="noopener noreferrer">PandaScore</a>',
-  });
   // Textos que arma la normalización de partidos
   LABELS.tbd = t('common.tbd');
   LABELS.tournament = t('common.tournament');

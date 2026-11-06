@@ -23,9 +23,14 @@
     "matchDetail": "Detalle del partido"
   },
   "footer": {
-    "data": "Datos de {link}. Las predicciones son estimaciones estadísticas con fines demostrativos, no consejos de apuestas."
-  },
-  "common": {
+    "matches": "Partidos y torneos:",
+    "transfers": "Pases:",
+    "news": "Noticias:",
+    "art": "Imágenes:",
+    "disclaimer": "Pickrate es un proyecto de fans, sin relación oficial con Valve, Riot Games ni Blizzard Entertainment. {game} y sus imágenes son marcas y propiedad de {owner}. Los logos de los equipos y las ligas pertenecen a sus respectivos dueños, y cada noticia y pase enlaza a su fuente.",
+    "bets": "Las predicciones son estimaciones estadísticas con fines demostrativos, no consejos de apuestas.",
+    "owners": { "cs2": "Valve Corporation", "valorant": "Riot Games", "overwatch": "Blizzard Entertainment" }
+  },  "common": {
     "retry": "Reintentar",
     "refresh": "Actualizar",
     "refreshData": "Actualizar datos",

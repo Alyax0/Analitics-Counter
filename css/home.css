@@ -22,6 +22,26 @@
   mask-image: linear-gradient(90deg, transparent, #000 45%);
 }
 .hero-art img, .hero-art .art-initials { width: 240px; height: 240px; object-fit: contain; }
+/* Con arte oficial, los logos del destacado quedan solo en su tarjeta */
+.hero.has-art { padding: 96px 0 88px; }
+.hero.has-art .hero-art { display: none; }
+.hero-key { position: absolute; inset: 0; pointer-events: none; }
+.hero-key img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* Degradados para que el texto se lea: oscuro a la izquierda y abajo, tinte del juego encima */
+.hero-key::after {
+  content: ''; position: absolute; inset: 0;
+  background:
+    linear-gradient(90deg, var(--bg) 0%, rgba(11, 11, 13, .88) 30%, rgba(11, 11, 13, .35) 62%, rgba(11, 11, 13, .1) 100%),
+    linear-gradient(0deg, var(--bg) 0%, transparent 40%),
+    linear-gradient(90deg, transparent 40%, color-mix(in srgb, var(--accent) 18%, transparent));
+}
+/* Retrato de agente (PNG recortado): a la derecha, sobre el degradado del juego */
+.hero-key.portrait img { left: auto; right: 4%; top: -8%; width: auto; height: 130%; object-fit: contain; object-position: bottom; }
+.hero-key.portrait::after {
+  background:
+    linear-gradient(90deg, var(--bg) 0%, rgba(11, 11, 13, .7) 35%, transparent 65%),
+    linear-gradient(0deg, var(--bg) 0%, transparent 35%);
+}
 .hero-art .art-b { transform: translateY(28px) rotate(6deg); }
 .hero-art .art-a { transform: translateY(-18px) rotate(-6deg); }
 .art-initials { display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-display); font-stretch: 125%; font-weight: 900; font-size: 110px; color: var(--accent); }
@@ -215,6 +235,9 @@
   .hero { padding: 44px 0 40px; }
   .hero-art { width: 100%; opacity: .12; padding-right: 0; justify-content: center; }
   .hero-art img, .hero-art .art-initials { width: 160px; height: 160px; }
+  .hero.has-art { padding: 120px 0 40px; }
+  .hero-key::after { background: linear-gradient(0deg, var(--bg) 8%, rgba(11, 11, 13, .75) 55%, rgba(11, 11, 13, .25) 100%); }
+  .hero-key.portrait img { right: -12%; top: -4%; height: 112%; opacity: .7; }
   .hero-lead { font-size: 16px; }
   .hero-lead br { display: none; }
   .feature-visual { min-height: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 150px 12px 12px; }
