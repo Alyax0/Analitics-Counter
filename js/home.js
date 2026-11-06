@@ -44,11 +44,17 @@ function hero({ state, game }, featured, now) {
     acc && acc.accuracy != null ? `<a href="${link(game, 'aciertos')}">${t('home.facts.accuracy', { pct: pct(acc.accuracy) })}</a>` : '',
   ].filter(Boolean);
 
+  // Arte oficial del juego; si no carga, vuelven los logos del partido destacado
+  const art = game.art && safeUrl(game.art.src);
+  const logos = featured ? `${artLogo(featured.teamA, 'art-a')}${artLogo(featured.teamB, 'art-b')}` : '';
   return `
-    <section class="hero">
-      <div class="hero-art" aria-hidden="true">
-        ${featured ? `${artLogo(featured.teamA, 'art-a')}${artLogo(featured.teamB, 'art-b')}` : ''}
-      </div>
+    <section class="hero ${art ? 'has-art' : ''}">
+      ${art ? `
+        <div class="hero-key ${esc(game.art.kind)}" aria-hidden="true">
+          <img src="${esc(art)}" alt="" decoding="async" fetchpriority="high" style="object-position:${esc(game.art.position || 'center')}"
+            onerror="this.closest('.hero').classList.remove('has-art'); this.parentNode.remove()">
+        </div>` : ''}
+      <div class="hero-art" aria-hidden="true">${logos}</div>
       <div class="wrap hero-inner">
         <div class="kicker"><span class="kicker-dot"></span>${tx('home.kicker', { game: game.name })}</div>
         <h1 class="hero-title">${esc(game.name)}</h1>
