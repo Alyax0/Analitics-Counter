@@ -6,8 +6,8 @@
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { GAMES } from '../js/games.js';
-import { normalizeMatch, buildTeamStats } from '../js/model.js';
-import { freeze, resolve, summarize, monthOf } from './predictions-core.js';
+import { normalizeMatch, buildTeamStats, buildRatings } from '../js/model.js';
+import { freeze, resolve, addRank, summarize, monthOf } from './predictions-core.js';
 
 const API = 'https://api.pandascore.co';
 const token = process.env.PANDASCORE_TOKEN;
@@ -42,7 +42,7 @@ async function currentData(slug) {
     history = pages.flat();
   }
   const past = [...new Map([...recent, ...history].map((m) => [m.id, m])).values()].filter((m) => m.status === 'finished');
-  return { upcoming, stats: buildTeamStats(past) };
+  return { upcoming, stats: buildTeamStats(past), ratings: buildRatings(past) };
 }
 
 // Estado actual de partidos puntuales, de a 50 ids
@@ -83,15 +83,16 @@ for (const game of Object.values(GAMES)) {
   let records = await readRecords(game.id);
   try {
     const pendingIds = records.filter((r) => r.status === 'pending').map((r) => r.id);
-    const [{ upcoming, stats }, current] = await Promise.all([currentData(game.slug), matchesById(game.slug, pendingIds)]);
+    const [{ upcoming, stats, ratings }, current] = await Promise.all([currentData(game.slug), matchesById(game.slug, pendingIds)]);
 
     let resolved = 0;
     records = records.map((r) => {
-      const next = resolve(r, current.get(r.id) || null, now);
-      if (next !== r) resolved++;
+      const m = current.get(r.id) || null;
+      const next = resolve(addRank(r, m, ratings), m, now);
+      if (next.status !== r.status) resolved++;
       return next;
     });
-    const created = freeze(game.id, records, upcoming, stats, now);
+    const created = freeze(game.id, records, upcoming, stats, ratings, now);
     records.push(...created);
     await writeRecords(game.id, records);
     log.push(`${game.id}: +${created.length} nuevas, ${resolved} cerradas`);

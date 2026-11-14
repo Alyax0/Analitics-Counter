@@ -4,7 +4,7 @@ import { normalizeMatch, normalizeRoster, buildTeamStats, recentRecord, predict,
 import {
   esc, safeUrl, dayKey, dayLabel, formatTime, formatShortDate, whenLabel, timezoneLabel,
   teamLogo, formDots, probBar, matchCard, skeletonList, skeletonStats, emptyState, errorState,
-  rosterGrid, newsCard, newsHero, confLevel,
+  rosterGrid, newsCard, newsHero, confLevel, rememberLogos, nameKey,
 } from './ui.js';
 import { t, setLang, preferredLang, getLang } from './i18n.js';
 import { viewHome } from './home.js';
@@ -82,6 +82,7 @@ function setMatches(live, upcoming, past) {
     .sort((a, b) => (b.date || 0) - (a.date || 0));
   state.stats = buildTeamStats(state.past);
   state.teamNames = null; // índice por nombre (teamByName): se rearma con los partidos nuevos
+  rememberLogos([...live, ...upcoming, ...state.past].flatMap((m) => [m.teamA, m.teamB]));
 }
 
 // Respaldo: datos reales capturados de PandaScore y guardados en el repo
@@ -286,6 +287,28 @@ async function loadNews({ force = false } = {}) {
   else renderNav();
 }
 
+// Pendientes vencidas hace más de 48 h: el workflow las pasa a canceladas en su
+// próxima corrida (CANCEL_AFTER_H en scripts/predictions-core.js); mientras
+// tanto la página ya las muestra así.
+const CANCEL_AFTER = 48 * 3600 * 1000;
+function dropOverdue(data) {
+  const now = Date.now();
+  const games = {};
+  for (const [id, g] of Object.entries(data.games || {})) {
+    const overdue = g.pendingList.filter((r) => now - new Date(r.scheduledAt) > CANCEL_AFTER);
+    if (!overdue.length) { games[id] = g; continue; }
+    const canceled = overdue.map((r) => ({ ...r, status: 'void', reason: 'cancelado' }));
+    games[id] = {
+      ...g,
+      pending: g.pending - overdue.length,
+      void: g.void + overdue.length,
+      pendingList: g.pendingList.filter((r) => !overdue.includes(r)),
+      recent: [...canceled, ...g.recent].sort((a, b) => b.scheduledAt.localeCompare(a.scheduledAt)).slice(0, 30),
+    };
+  }
+  return { ...data, games };
+}
+
 async function loadSummary({ force = false } = {}) {
   const acc = state.acc;
   if (acc.loading) return;
@@ -293,7 +316,7 @@ async function loadSummary({ force = false } = {}) {
   if (acc.status !== 'ready') acc.status = 'loading';
   try {
     const r = await summaryGet({ force });
-    Object.assign(acc, { status: 'ready', data: r.data, error: null });
+    Object.assign(acc, { status: 'ready', data: dropOverdue(r.data), error: null });
   } catch (e) {
     if (acc.status !== 'ready') acc.status = 'error';
     acc.error = e.message;
@@ -317,9 +340,11 @@ async function loadTourneys({ force = false } = {}) {
     const results = await Promise.all(lists.map(([list, params]) => psGet(game.slug, `tournaments/${list}`, params, { force })));
     if (tor !== state.tourneys) return; // cambió el juego
     const stages = results.flatMap((r, i) => r.data.map((data) => ({ data, list: lists[i][0] })));
+    const events = buildEvents(stages);
+    rememberLogos(events.flatMap((ev) => ev.teams));
     Object.assign(tor, {
       status: 'ready',
-      events: buildEvents(stages),
+      events,
       at: Math.min(...results.map((r) => r.at)),
       stale: results.some((r) => r.stale),
       error: results.find((r) => r.error)?.error || null,
@@ -473,21 +498,23 @@ function viewCalendario() {
 }
 
 // Equipo de PandaScore con ese nombre (para mostrar su logo en Transfers)
+// El nombre se compara sin "Team", "Esports", mayúsculas ni signos
 function teamByName(name) {
-  const key = name.toLowerCase();
   if (!state.teamNames) {
     state.teamNames = new Map();
     for (const m of [...state.live, ...state.upcoming, ...state.past]) {
-      for (const team of [m.teamA, m.teamB]) if (team.id) state.teamNames.set(team.name.toLowerCase(), team);
+      for (const team of [m.teamA, m.teamB]) if (team.id && nameKey(team.name)) state.teamNames.set(nameKey(team.name), team);
     }
   }
-  return state.teamNames.get(key) || null;
+  return state.teamNames.get(nameKey(name)) || null;
 }
+
+const MIN_FORM_MATCHES = 10; // Equipos en forma: solo con los 10 partidos completos
 
 function teamRows() {
   return [...state.stats.values()]
     .map(({ team }) => ({ team, rec: recentRecord(state.stats, team.id) }))
-    .filter((t) => t.rec.n >= 5)
+    .filter((t) => t.rec.n >= MIN_FORM_MATCHES)
     .sort((a, b) => b.rec.wins / b.rec.n - a.rec.wins / a.rec.n || b.rec.n - a.rec.n || b.rec.wins - a.rec.wins);
 }
 
@@ -562,6 +589,7 @@ function viewNoticias() {
 }
 
 const pct = (x) => (x == null ? '—' : `${Math.round(x * 100)}%`);
+const MIN_FOR_PCT = 10; // menos partidos que esto: no se muestra porcentaje
 
 // Motivos de anulación tal como los guarda scripts/predictions-core.js
 const VOID_REASONS = {
@@ -626,6 +654,19 @@ function viewAciertos() {
   const levels = ['alta', 'media', 'baja'].map((level) => ({ level, ...g.byConfidence[level] }));
   const stat = (key, value, sub, accent = false) => `
     <div class="stat-item"><div class="s-label">${esc(t(`aciertos.stats.${key}`))}</div><div class="s-val ${accent ? 'accent' : ''}">${value}</div><div class="s-sub">${esc(sub)}</div></div>`;
+  // Modelo contra "elegir siempre al mejor rankeado" (Elo), sobre los mismos partidos
+  const rk = g.ranked || { n: 0, model: 0, rank: 0 };
+  const enough = rk.n >= MIN_FOR_PCT;
+  const diff = enough ? Math.round((rk.model / rk.n) * 100) - Math.round((rk.rank / rk.n) * 100) : null;
+  const vsRank = `
+    <h2 class="section-label">${esc(t('aciertos.vsRank.title'))}</h2>
+    <div class="stat-row">
+      ${stat('model', enough ? pct(rk.model / rk.n) : '—', t('aciertos.stats.accuracySub', { correct: rk.model, decided: rk.n }), true)}
+      ${stat('rank', enough ? pct(rk.rank / rk.n) : '—', t('aciertos.stats.accuracySub', { correct: rk.rank, decided: rk.n }))}
+      ${stat('diff', diff == null ? '—' : `${diff > 0 ? '+' : ''}${diff}`, t('aciertos.stats.diffSub'))}
+      ${stat('compared', rk.n, t('aciertos.stats.comparedSub'))}
+    </div>
+    <p class="footnote">${esc(enough ? t('aciertos.vsRank.text') : t('aciertos.vsRank.few', { n: rk.n, min: MIN_FOR_PCT }))}</p>`;
   return `
     ${head}
     <div class="stat-row">
@@ -644,11 +685,12 @@ function viewAciertos() {
             <tr>
               <td><span class="conf conf-${l.level}">${esc(t(`conf.label.${l.level}`))}</span></td>
               <td>${l.n}</td>
-              <td>${l.n ? `<div class="pct"><span class="pct-bar"><span style="width:${Math.round((l.correct / l.n) * 100)}%"></span></span><strong>${pct(l.correct / l.n)}</strong></div>` : '<span class="muted">—</span>'}</td>
+              <td>${l.n >= MIN_FOR_PCT ? `<div class="pct"><span class="pct-bar"><span style="width:${Math.round((l.correct / l.n) * 100)}%"></span></span><strong>${pct(l.correct / l.n)}</strong></div>` : `<span class="muted">${l.n ? esc(t('aciertos.fewMatches', { min: MIN_FOR_PCT })) : '—'}</span>`}</td>
             </tr>`).join('')}
         </tbody>
       </table>
     </div>
+    ${vsRank}
     ${g.pendingList.length ? `<h2 class="section-label">${esc(t('aciertos.pendingTitle'))}</h2><ul class="pred-list">${g.pendingList.map(predRow).join('')}</ul>` : ''}
     ${g.recent.length ? `<h2 class="section-label">${esc(t('aciertos.recentTitle'))}</h2><ul class="pred-list">${g.recent.map(predRow).join('')}</ul>` : ''}
     ${footnote}`;

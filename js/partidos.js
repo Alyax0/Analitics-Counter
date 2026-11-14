@@ -2,7 +2,7 @@
 // de región, partidos por día y resultados desplegables por día.
 
 import { predict } from './model.js';
-import { esc, safeUrl, dayKey, dayLabel, formatTime, whenLabel, timezoneLabel, teamLogo, probBar, emptyState, errorState, skeletonList, confLevel } from './ui.js';
+import { esc, safeUrl, logoOf, dayKey, dayLabel, formatTime, whenLabel, timezoneLabel, teamLogo, probBar, emptyState, errorState, skeletonList, confLevel } from './ui.js';
 import { pickFeatured } from './home.js';
 import { t } from './i18n.js';
 
@@ -35,11 +35,17 @@ function platform(url) {
   return null;
 }
 
+// Tamaño según la palabra más larga, para que no se parta a la mitad
+function nameSize(name) {
+  const longest = Math.max(0, ...String(name).split(/s+/).map((w) => w.length));
+  return longest > 13 ? 'xlong' : longest > 9 ? 'long' : '';
+}
+
 function bigTeam(team, side) {
   return `
     <div class="pm-team ${side}">
       ${teamLogo(team, 'xl')}
-      <span class="pm-team-name">${esc(team.name)}</span>
+      <span class="pm-team-name ${nameSize(team.name)}" title="${esc(team.name)}">${esc(team.name)}</span>
     </div>`;
 }
 
@@ -141,7 +147,7 @@ export function viewPartidos(ctx) {
 
   const live = state.live.filter(pick);
   const upcoming = state.upcoming.filter(pick).slice(0, 20);
-  const featured = pickFeatured({ live, upcoming }, now);
+  const featured = pickFeatured({ live, upcoming, stats: state.stats }, now);
   const next24 = state.upcoming.filter((m) => m.date && m.date - now < 24 * 3600 * 1000);
   const leagues = new Set([...state.live, ...next24].map((m) => m.league));
   const predictable = state.upcoming.slice(0, 20).filter((m) => {
@@ -163,7 +169,7 @@ export function viewPartidos(ctx) {
   // Logo grande de fondo: el favorito del destacado, o el primer equipo
   const p = featured && predict(featured, state.stats);
   const star = featured && (p && !p.insufficient && p.favorite === 'B' ? featured.teamB : featured.teamA);
-  const starLogo = star && star.logo && safeUrl(star.logo);
+  const starLogo = star && logoOf(star);
   const art = starLogo ? `<img src="${esc(starLogo)}" alt="" decoding="async" onerror="this.remove()">` : '';
   const eyebrow = [game.name, featured && featured.league, featured && featured.stage].filter(Boolean).join(' · ');
 

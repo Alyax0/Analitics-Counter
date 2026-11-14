@@ -199,6 +199,7 @@
     "filterAria": "Filtrar pases",
     "chips": { "all": "Todos", "arrivals": "Llegadas", "departures": "Salidas" },
     "noTeam": "Sin equipo",
+    "toInactive": "Pasó a inactivo",
     "retired": "Retirado",
     "to": "pasa a",
     "refAria": "Ver el anuncio original",
@@ -221,7 +222,7 @@
     "accent": "en forma",
     "emptyTitle": "Sin datos",
     "emptyText": "Todavía no hay suficientes resultados para armar la tabla.",
-    "lead": "Equipos con al menos 5 partidos entre los {n} resultados cargados (los más recientes y el historial de los equipos que juegan pronto), ordenados por % de victorias en sus últimos 10. No es un ranking oficial.",
+    "lead": "Equipos con al menos 10 partidos entre los {n} resultados cargados (los más recientes y el historial de los equipos que juegan pronto), ordenados por % de victorias en sus últimos 10. No es un ranking oficial.",
     "col": { "team": "Equipo", "wl": "V–D", "pct": "% victorias", "form": "Forma" }
   },
   "aciertos": {
@@ -242,8 +243,20 @@
       "brier": "Brier score",
       "brierSub": "menor es mejor · azar: 0.250",
       "pending": "Pendientes",
-      "pendingSub": "esperando resultado"
+      "pendingSub": "esperando resultado",
+      "model": "Modelo",
+      "rank": "Mejor rankeado",
+      "diff": "Diferencia",
+      "diffSub": "puntos de % a favor del modelo",
+      "compared": "Comparados",
+      "comparedSub": "mismos partidos para los dos"
     },
+    "vsRank": {
+      "title": "Contra elegir siempre al mejor rankeado",
+      "text": "\"Mejor rankeado\" es el equipo con más puntos en un ranking Elo propio, armado con los mismos resultados de PandaScore que usa el modelo y guardado al hacer cada predicción.",
+      "few": "Hacen falta al menos {min} partidos resueltos con ranking guardado para comparar (van {n}). El ranking se guarda desde esta versión, así que la comparación arranca con las predicciones nuevas."
+    },
+    "fewMatches": "menos de {min} partidos",
     "noneResolved": "Todavía no terminó ningún partido con predicción. Los primeros resultados aparecen apenas terminen.",
     "byConfidence": "Por nivel de confianza",
     "col": { "confidence": "Confianza", "matches": "Partidos", "hits": "Aciertos" },

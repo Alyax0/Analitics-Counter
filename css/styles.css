@@ -147,7 +147,8 @@ main.container.is-home { max-width: none; padding: 0; }
 .m-team { display: flex; align-items: center; gap: 10px; min-width: 0; font-weight: 600; }
 .m-team.right { justify-content: flex-end; text-align: right; }
 .m-team.dim { color: var(--muted); }
-.m-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Hasta dos líneas cortando entre palabras, no a mitad de una */
+.m-name { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.2; overflow-wrap: normal; word-break: normal; }
 .m-score { font-size: 18px; font-weight: 700; min-width: 56px; text-align: center; font-variant-numeric: tabular-nums; }
 .m-score span { color: var(--muted2); margin: 0 4px; }
 .m-score .vs { color: var(--muted); font-size: 13px; font-weight: 500; margin: 0; }
@@ -213,7 +214,10 @@ main.container.is-home { max-width: none; padding: 0; }
 .pm-versus:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; border-radius: 8px; }
 .pm-team { display: flex; align-items: center; gap: 18px; min-width: 0; }
 .pm-team.b { flex-direction: row-reverse; text-align: right; }
-.pm-team-name { font-family: var(--font-display); font-stretch: 118%; font-weight: 900; font-size: clamp(22px, 3.2vw, 40px); line-height: 1; text-transform: uppercase; overflow-wrap: anywhere; }
+.pm-team-name { font-family: var(--font-display); font-stretch: 118%; font-weight: 900; font-size: clamp(22px, 3.2vw, 40px); line-height: 1; text-transform: uppercase; overflow-wrap: normal; word-break: normal; hyphens: none; text-wrap: balance; }
+/* Nombres con palabras largas: letra más chica en vez de cortar la palabra */
+.pm-team-name.long { font-size: clamp(18px, 2.4vw, 30px); }
+.pm-team-name.xlong { font-size: clamp(15px, 1.9vw, 24px); font-stretch: 105%; }
 .pm-versus:hover .pm-team-name { color: var(--accent); }
 .pm-vs { font-family: var(--font-display); font-stretch: 125%; font-weight: 900; font-size: clamp(22px, 3vw, 36px); color: var(--accent); font-variant-numeric: tabular-nums; }
 .pm-vs small { margin: 0 6px; color: var(--muted2); }
@@ -441,7 +445,9 @@ table.teams.compact { min-width: 0; }
   .pm-card { padding: 14px 16px 20px; }
   .pm-versus { gap: 12px; margin: 20px 0 18px; }
   .pm-team, .pm-team.b { flex-direction: column; align-items: center; text-align: center; gap: 10px; }
-  .pm-team-name { font-size: 15px; font-stretch: 105%; overflow-wrap: break-word; }
+  .pm-team-name { font-size: 15px; font-stretch: 105%; }
+  .pm-team-name.long { font-size: 13px; }
+  .pm-team-name.xlong { font-size: 11px; font-stretch: 100%; }
   .logo-badge.xl { width: 56px; height: 56px; }
   .pm-feature-foot { flex-direction: column; align-items: stretch; }
   .pm-watch { text-align: center; }

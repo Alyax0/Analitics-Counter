@@ -6,17 +6,21 @@
 //   del horario programado y el inicio. Nunca se actualiza.
 // - Al resolverse, si se guardó después del inicio real del partido, se anula.
 // - No cuentan: cancelados, ganados por W.O., empates y partidos sin ganador.
+// - Si pasan más de CANCEL_AFTER_H horas del horario programado y el partido
+//   no terminó (o ya no aparece en la API), se da por cancelado.
+// - Cada predicción guarda también al mejor rankeado (Elo propio) para
+//   comparar el modelo contra "elegir siempre al mejor rankeado".
 
-import { predict } from '../js/model.js';
+import { predict, rankPick } from '../js/model.js';
 
 export const MODEL = 'winrate-v1';
 export const FREEZE_WINDOW_H = 6;
-export const STALE_DAYS = 14; // pendientes sin resultado después de esto se anulan
+export const CANCEL_AFTER_H = 48;
 
 const team = (t) => ({ id: t.id, name: t.name });
 
 // Predicciones nuevas para partidos que empiezan pronto y no estaban registrados
-export function freeze(gameId, existing, upcoming, stats, now = new Date()) {
+export function freeze(gameId, existing, upcoming, stats, ratings, now = new Date()) {
   const known = new Set(existing.map((r) => r.id));
   const created = [];
   for (const m of upcoming) {
@@ -40,6 +44,7 @@ export function freeze(gameId, existing, upcoming, stats, now = new Date()) {
       favorite: p.favorite,
       confidence: p.confidence,
       sample: { a: p.a.n, b: p.b.n },
+      rank: rankPick(m, ratings),
       status: 'pending',
     });
   }
@@ -51,12 +56,8 @@ export function resolve(record, m, now = new Date()) {
   if (record.status !== 'pending') return record;
   const done = (fields) => ({ ...record, resolvedAt: now.toISOString(), ...fields });
 
-  if (!m) {
-    const age = now - new Date(record.scheduledAt);
-    return age > STALE_DAYS * 86400 * 1000 ? done({ status: 'void', reason: 'sin resultado' }) : record;
-  }
-  if (m.status === 'canceled') return done({ status: 'void', reason: 'cancelado' });
-  if (m.status !== 'finished') return record;
+  if (m && m.status === 'canceled') return done({ status: 'void', reason: 'cancelado' });
+  if (!m || m.status !== 'finished') return isOverdue(record, now) ? done({ status: 'void', reason: 'cancelado' }) : record;
   if (m.startedAt && new Date(record.predictedAt) >= m.startedAt) return done({ status: 'void', reason: 'guardada tarde' });
   if (m.forfeit) return done({ status: 'void', reason: 'W.O.' });
   if (m.draw) return done({ status: 'void', reason: 'empate' });
@@ -75,7 +76,21 @@ export function resolve(record, m, now = new Date()) {
       startedAt: m.startedAt ? m.startedAt.toISOString() : null,
     },
     correct: record.favorite ? record.favorite === winner : null,
+    ...(record.rank ? { rankCorrect: record.rank.pick ? record.rank.pick === winner : null } : {}),
   });
+}
+
+// Pendiente con el horario programado vencido hace más de CANCEL_AFTER_H horas
+export function isOverdue(record, now = new Date()) {
+  return record.status === 'pending' && now - new Date(record.scheduledAt) > CANCEL_AFTER_H * 3600 * 1000;
+}
+
+// Predicciones viejas sin ranking: se completa solo si el partido todavía no
+// empezó, así el ranking no usa resultados posteriores a la predicción.
+export function addRank(record, m, ratings) {
+  if (record.rank || record.status !== 'pending' || !m || m.status !== 'upcoming' || m.startedAt) return record;
+  const same = m.teamA.id === record.teamA.id;
+  return { ...record, rank: rankPick(same ? m : { teamA: m.teamB, teamB: m.teamA }, ratings) };
 }
 
 function aggregate(list) {
@@ -85,6 +100,9 @@ function aggregate(list) {
   const brier = resolved.length
     ? resolved.reduce((s, r) => s + (r.probA / 100 - (r.result.winner === 'A' ? 1 : 0)) ** 2, 0) / resolved.length
     : null;
+  // Modelo contra "elegir siempre al mejor rankeado", sobre los mismos partidos
+  const both = decided.filter((r) => r.rankCorrect != null);
+  const ranked = { n: both.length, model: both.filter((r) => r.correct).length, rank: both.filter((r) => r.rankCorrect).length };
   const byConfidence = {};
   for (const level of ['alta', 'media', 'baja']) {
     const g = decided.filter((r) => r.confidence === level);
@@ -98,6 +116,7 @@ function aggregate(list) {
     accuracy: decided.length ? correct / decided.length : null,
     brier,
     byConfidence,
+    ranked,
     pending: list.filter((r) => r.status === 'pending').length,
     void: list.filter((r) => r.status === 'void').length,
   };

@@ -6,14 +6,15 @@ Partidos de **Counter-Strike 2**, **Valorant** y **Overwatch** en vivo, calendar
 
 Cada juego tiene sus propias secciones, con rutas `#/cs2/...`, `#/valorant/...` y `#/overwatch/...`, y un selector arriba para cambiar de juego.
 
-- **Partidos:** encabezado grande con el próximo partido destacado (pestañas por región, predicción y enlace a la transmisión), partidos por día en la hora local y resultados por día desplegables. Formato BO1/BO3/BO5 (o FT3/FT4 en Overwatch), marcador y probabilidad estimada.
+- **Partidos:** encabezado grande con el próximo partido destacado (primero los que tienen predicción o son de torneo de nivel S/A, igual que en el inicio) (pestañas por región, predicción y enlace a la transmisión), partidos por día en la hora local y resultados por día desplegables. Formato BO1/BO3/BO5 (o FT3/FT4 en Overwatch), marcador y probabilidad estimada.
 - **Calendario:** dentro de Partidos (vista "Calendario"), los próximos partidos agrupados por día, en la zona horaria de quien visita.
 - **Torneos:** en curso, próximos y terminados en los últimos 30 días, con nivel (S a D), fechas, lugar, premio y equipos. PandaScore divide cada evento en fases (grupos, playoffs); se agrupan por serie para mostrar un evento por fila, y al tocarlo se ven sus fases y partidos.
-- **Transfers:** pases de jugadores de los últimos 120 días (equipo anterior → equipo nuevo, con rol), agrupados por día y con enlace al anuncio original. Vienen de Liquipedia (CC BY-SA 3.0) y los guarda un workflow; ver más abajo.
+- **Transfers:** pases de jugadores de los últimos 120 días (equipo anterior → equipo nuevo, con rol), agrupados por día y con enlace al anuncio original. Si el equipo de origen y el de destino son el mismo y el rol nuevo es Inactive, se muestra como "pasó a inactivo" (y cuenta como salida). Vienen de Liquipedia (CC BY-SA 3.0) y los guarda un workflow; ver más abajo.
 - **Portada con arte oficial:** la imagen de Steam de CS2 y de Overwatch, y un agente de Valorant (arte de Riot servido por valorant-api.com). Se cargan desde esos servidores; si fallan, vuelven los logos del partido destacado. El pie aclara que es un proyecto de fans y de dónde viene cada dato.
-- **Equipos en forma:** % de victorias en los últimos 10 partidos, calculado sobre los resultados recientes más el historial de los equipos que juegan pronto.
+- **Equipos en forma:** % de victorias en los últimos 10 partidos (solo equipos con los 10 jugados), calculado sobre los resultados recientes más el historial de los equipos que juegan pronto.
 - **Modo demo:** si la API no responde, se cargan datos reales capturados en `data/demo.json` (CS2), `data/demo-valorant.json` o `data/demo-overwatch.json`, con un aviso. Con `?demo` en la URL se fuerza ese modo.
 - **Detalle de partido:** forma de cada equipo, cruces recientes, planteles y enlace a la transmisión.
+- **Logos de respaldo:** si PandaScore no trae el logo de un equipo, se usa uno visto antes para el mismo id o nombre (guardado en el navegador); si no hay ninguno, las siglas.
 - **Ficha de equipo:** plantel con nacionalidad y edad, próximos partidos y últimos 10 resultados.
 - **Noticias:** una nota destacada grande y una grilla de dos columnas, con la imagen de portada de la fuente (o un degradado si no trae) y la etiqueta NUEVO en las de menos de 48 h. En CS2, titulares de HLTV (RSS) y notas de parche oficiales de Valve (API de noticias de Steam); en Valorant, titulares de VLR.gg y Dexerto (RSS); en Overwatch, anuncios oficiales de Blizzard en Steam y titulares de Dexerto (RSS). Todas con enlace a la fuente original.
 
@@ -26,10 +27,12 @@ Para cada equipo se toma su tasa de victorias en los últimos 10 partidos, suavi
 Un workflow de GitHub Actions (`.github/workflows/predictions.yml`) corre cada 30 minutos:
 
 1. Guarda la predicción de cada partido que empieza en las próximas 6 horas, con la hora en que se hizo. No se modifica nunca.
-2. Cuando el partido termina, anota el resultado. Si la predicción quedó guardada después del inicio real, se anula.
+2. Cuando el partido termina, anota el resultado. Si la predicción quedó guardada después del inicio real, se anula. Si pasaron más de 48 horas del horario programado y el partido no terminó (o ya no aparece en la API), se marca como cancelado y sale de pendientes.
 3. Commitea todo en la rama [`data`](https://github.com/Alyax0/Analitics-Counter/tree/data): `predictions/<juego>/<AAAA-MM>.json` (un registro por línea) y `predictions/summary.json`, que es lo que lee la sección **Aciertos**.
 
-El historial de commits de esa rama es la prueba pública de que cada predicción se hizo antes del partido. No cuentan los cancelados, los ganados por W.O. ni los empates. Además del % de aciertos se muestra el [Brier score](https://es.wikipedia.org/wiki/Puntuaci%C3%B3n_de_Brier) (0 es perfecto; tirar una moneda da 0.25).
+El historial de commits de esa rama es la prueba pública de que cada predicción se hizo antes del partido. No cuentan los cancelados, los ganados por W.O. ni los empates. Además del % de aciertos se muestra el [Brier score](https://es.wikipedia.org/wiki/Puntuaci%C3%B3n_de_Brier) (0 es perfecto; tirar una moneda da 0.25). Los niveles de confianza con menos de 10 partidos no muestran porcentaje.
+
+**Contra el mejor rankeado:** cada predicción guarda también qué equipo tenía más puntos en un ranking Elo propio (todos arrancan en 1500, K = 32), armado con los mismos resultados de PandaScore que usa el modelo. Aciertos compara el % del modelo con el de "elegir siempre al mejor rankeado" sobre los mismos partidos. El ranking se guarda desde esta versión (y en las pendientes que todavía no empezaron), así que la comparación crece con las predicciones nuevas.
 
 Para que funcione, el repo necesita el secreto `PANDASCORE_TOKEN` en *Settings → Secrets and variables → Actions*.
 

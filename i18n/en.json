@@ -199,6 +199,7 @@
     "filterAria": "Filter transfers",
     "chips": { "all": "All", "arrivals": "Arrivals", "departures": "Departures" },
     "noTeam": "No team",
+    "toInactive": "Moved to inactive",
     "retired": "Retired",
     "to": "moves to",
     "refAria": "See the original announcement",
@@ -221,7 +222,7 @@
     "accent": "in form",
     "emptyTitle": "No data",
     "emptyText": "There aren't enough results to build the table yet.",
-    "lead": "Teams with at least 5 matches among the {n} loaded results (the most recent ones plus the history of teams playing soon), sorted by win rate over their last 10. Not an official ranking.",
+    "lead": "Teams with at least 10 matches among the {n} loaded results (the most recent ones plus the history of teams playing soon), sorted by win rate over their last 10. Not an official ranking.",
     "col": { "team": "Team", "wl": "W–L", "pct": "Win %", "form": "Form" }
   },
   "aciertos": {
@@ -242,8 +243,20 @@
       "brier": "Brier score",
       "brierSub": "lower is better · random: 0.250",
       "pending": "Pending",
-      "pendingSub": "awaiting result"
+      "pendingSub": "awaiting result",
+      "model": "Model",
+      "rank": "Higher ranked",
+      "diff": "Difference",
+      "diffSub": "percentage points in favor of the model",
+      "compared": "Compared",
+      "comparedSub": "same matches for both"
     },
+    "vsRank": {
+      "title": "Against always picking the higher-ranked team",
+      "text": "\"Higher ranked\" is the team with more points in our own Elo ranking, built from the same PandaScore results the model uses and saved with each prediction.",
+      "few": "At least {min} resolved matches with a saved ranking are needed to compare ({n} so far). The ranking is saved starting with this version, so the comparison begins with new predictions."
+    },
+    "fewMatches": "fewer than {min} matches",
     "noneResolved": "No predicted match has finished yet. The first results show up as soon as they end.",
     "byConfidence": "By confidence level",
     "col": { "confidence": "Confidence", "matches": "Matches", "hits": "Accuracy" },

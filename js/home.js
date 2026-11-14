@@ -3,7 +3,7 @@
 // Recibe el estado ya cargado desde app.js y solo arma HTML.
 
 import { predict, recentRecord } from './model.js';
-import { esc, safeUrl, ago, dayKey, dayLabel, formatTime, formatShortDate, whenLabel, teamLogo, formDots, skeletonList, errorState, newsKind, confLevel, isNewNews } from './ui.js';
+import { esc, safeUrl, logoOf, ago, dayKey, dayLabel, formatTime, formatShortDate, whenLabel, teamLogo, formDots, skeletonList, errorState, newsKind, confLevel, isNewNews } from './ui.js';
 import { ICONS } from './icons.js';
 import { t } from './i18n.js';
 
@@ -16,19 +16,30 @@ const link = (game, route) => `#/${game.id}/${route}`;
 const arrow = `<span class="arrow">${ICONS.flecha}</span>`;
 const tx = (key, params) => esc(t(key, params));
 
-// Partido para destacar: el en vivo de mayor nivel; si no hay, el próximo de
-// mayor nivel en las próximas 48 h (o el más cercano con rivales definidos)
+// Partido para destacar. Primero los que tienen predicción o son de torneo de
+// nivel alto (S/A): en vivo y, si no hay, los de las próximas 48 h. Si ninguno
+// cumple, como antes: el en vivo de mayor nivel o el próximo de mayor nivel.
+// state: { live, upcoming, stats }
 export function pickFeatured(state, now) {
-  const live = state.live.filter(bothTeams).sort((a, b) => tierOf(b) - tierOf(a));
-  if (live.length) return live[0];
+  const hasPred = (m) => {
+    const p = state.stats && predict(m, state.stats);
+    return !!(p && !p.insufficient);
+  };
+  const score = (m) => (tierOf(m) >= TIER.a ? 1 : 0) + (hasPred(m) ? 1 : 0);
+  const best = (list) => [...list].sort((a, b) => score(b) - score(a) || tierOf(b) - tierOf(a) || (a.date || 0) - (b.date || 0))[0] || null;
+
+  const live = best(state.live.filter(bothTeams));
   const withTeams = state.upcoming.filter((m) => bothTeams(m) && m.date);
   const soon = withTeams.filter((m) => m.date - now < 48 * HOUR);
-  return [...(soon.length ? soon : withTeams)].sort((a, b) => tierOf(b) - tierOf(a) || a.date - b.date)[0] || null;
+  const next = best(soon.length ? soon : withTeams);
+  if (live && score(live)) return live;
+  if (soon.length && score(next)) return next;
+  return live || next;
 }
 
 // Logo grande para el fondo; si no hay imagen, las siglas
 function artLogo(team, cls) {
-  const src = team.logo && safeUrl(team.logo);
+  const src = logoOf(team);
   return src
     ? `<img class="${cls}" src="${esc(src)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">`
     : `<span class="${cls} art-initials">${esc((team.acronym || team.name).slice(0, 3))}</span>`;
@@ -200,7 +211,7 @@ function predictionsCard({ state, game }) {
           <a class="level level-${k}" href="${link(game, 'aciertos')}">
             <span class="level-name">${tx(`conf.label.${k}`)}</span>
             <span class="level-sub">${tx('home.pred.matches', { n: l.n })}</span>
-            <strong class="level-pct">${l.n ? pct(l.correct / l.n) : '—'}</strong>
+            <strong class="level-pct">${l.n >= 10 ? pct(l.correct / l.n) : '—'}</strong>
             ${arrow}
           </a>`;
       }).join('');

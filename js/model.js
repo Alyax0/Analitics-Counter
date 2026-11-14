@@ -108,6 +108,34 @@ export function buildTeamStats(finished) {
   return stats;
 }
 
+// Ranking Elo propio sobre los partidos terminados (todos arrancan en 1500).
+// Sirve de referencia: "elegir siempre al mejor rankeado".
+export const ELO_START = 1500;
+const ELO_K = 32;
+
+export function buildRatings(finished) {
+  const ratings = new Map();
+  const sorted = finished
+    .filter((m) => m.status === 'finished' && !m.forfeit && m.teamA.id && m.teamB.id && (m.winner || m.draw))
+    .sort((a, b) => (a.date || 0) - (b.date || 0));
+  for (const m of sorted) {
+    const ra = ratings.get(m.teamA.id) ?? ELO_START;
+    const rb = ratings.get(m.teamB.id) ?? ELO_START;
+    const expA = 1 / (1 + 10 ** ((rb - ra) / 400));
+    const scoreA = m.draw ? 0.5 : m.winner === 'A' ? 1 : 0;
+    ratings.set(m.teamA.id, ra + ELO_K * (scoreA - expA));
+    ratings.set(m.teamB.id, rb - ELO_K * (scoreA - expA));
+  }
+  return ratings;
+}
+
+// Equipo mejor rankeado de un partido ('A', 'B' o null si empatan)
+export function rankPick(match, ratings) {
+  const a = Math.round(ratings.get(match.teamA.id) ?? ELO_START);
+  const b = Math.round(ratings.get(match.teamB.id) ?? ELO_START);
+  return { a, b, pick: a === b ? null : a > b ? 'A' : 'B' };
+}
+
 export function recentRecord(stats, teamId, n = FORM_WINDOW) {
   const history = (stats.get(teamId) || { history: [] }).history.slice(0, n);
   const wins = history.filter((r) => r.result === 'w').length;

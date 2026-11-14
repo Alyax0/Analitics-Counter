@@ -77,9 +77,58 @@ export const confLevel = (c) => t(`conf.${c}`);
 
 // ---------- Componentes ----------
 
+// ---------- Logos de respaldo ----------
+// PandaScore no siempre trae image_url (y en Transfers solo hay nombres): se
+// recuerdan los logos vistos por id y por nombre, también entre visitas.
+
+const LOGOS_KEY = 'pickrate_logos';
+const LOGOS_MAX = 1500;
+const logos = (() => {
+  try {
+    return new Map(JSON.parse(localStorage.getItem(LOGOS_KEY) || '[]'));
+  } catch {
+    return new Map();
+  }
+})();
+
+// "Team Vitality", "Vitality Esports" y "vitality" → "vitality"
+export const nameKey = (name) => String(name || '').toLowerCase()
+  .replace(/\b(team|esports?|gaming|club|gg)\b/g, '').replace(/[^a-z0-9]/g, '');
+
+export function rememberLogos(teams) {
+  let changed = false;
+  for (const tm of teams) {
+    const src = tm && tm.logo && safeUrl(tm.logo);
+    if (!src) continue;
+    for (const k of [tm.id && `id:${tm.id}`, nameKey(tm.name) && `n:${nameKey(tm.name)}`]) {
+      if (k && logos.get(k) !== src) { logos.delete(k); logos.set(k, src); changed = true; }
+    }
+  }
+  if (!changed) return;
+  while (logos.size > LOGOS_MAX) logos.delete(logos.keys().next().value);
+  try {
+    localStorage.setItem(LOGOS_KEY, JSON.stringify([...logos]));
+  } catch {
+    // sin espacio: quedan solo en memoria
+  }
+}
+
+// Logo del equipo, o uno visto antes para el mismo id o nombre
+export function logoOf(team) {
+  if (!team) return null;
+  return (team.logo && safeUrl(team.logo)) || logos.get(`id:${team.id}`) || logos.get(`n:${nameKey(team.name)}`) || null;
+}
+
+// Siglas si no hay logo: acrónimo, o iniciales de cada palabra del nombre
+function initialsOf(team) {
+  if (team.acronym) return team.acronym.slice(0, 3);
+  const words = String(team.name || '?').split(/[\s._-]+/).filter(Boolean);
+  return (words.length > 1 ? words.map((w) => w[0]).join('') : words[0] || '?').slice(0, 3).toUpperCase();
+}
+
 export function teamLogo(team, size = 'md') {
-  const initials = esc((team.acronym || team.name || '?').slice(0, 3));
-  const src = team.logo && safeUrl(team.logo);
+  const initials = esc(initialsOf(team));
+  const src = logoOf(team);
   return `<span class="logo-badge ${size}" aria-hidden="true"><span>${initials}</span>${
     src ? `<img src="${esc(src)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''
   }</span>`;
@@ -146,9 +195,9 @@ export function matchCard(m, pred) {
         <span class="m-sub">${esc([m.serie, m.format].filter(Boolean).join(' · '))}</span>
       </div>
       <div class="m-teams">
-        <div class="m-team ${dimA ? 'dim' : ''}">${teamLogo(m.teamA)}<span class="m-name">${esc(m.teamA.name)}</span></div>
+        <div class="m-team ${dimA ? 'dim' : ''}">${teamLogo(m.teamA)}<span class="m-name" title="${esc(m.teamA.name)}">${esc(m.teamA.name)}</span></div>
         <div class="m-score">${showScore ? `${m.scoreA}<span>–</span>${m.scoreB}` : '<span class="vs">vs</span>'}</div>
-        <div class="m-team right ${dimB ? 'dim' : ''}"><span class="m-name">${esc(m.teamB.name)}</span>${teamLogo(m.teamB)}</div>
+        <div class="m-team right ${dimB ? 'dim' : ''}"><span class="m-name" title="${esc(m.teamB.name)}">${esc(m.teamB.name)}</span>${teamLogo(m.teamB)}</div>
       </div>
       <div class="m-side">${sideColumn(m, pred)}</div>
     </button>`;
