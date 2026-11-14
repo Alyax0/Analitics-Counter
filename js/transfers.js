@@ -49,15 +49,23 @@ function sideHtml(s, teamByName) {
   }
   const teams = s.teams.map((name) => {
     const known = teamByName(name);
-    const logo = teamLogo(known || { name, acronym: name.replace(/[^A-Za-z0-9]/g, '').slice(0, 3).toUpperCase() }, 'sm');
+    const logo = teamLogo(known || { name }, 'sm');
     const label = `${logo}<span class="tr-team-name">${esc(name)}</span>`;
     return known ? `<button type="button" class="tr-team-link" data-team="${known.id}">${label}</button>` : `<span class="tr-team-link static">${label}</span>`;
   }).join('<span class="tr-sep">/</span>');
   return `<span class="tr-team">${teams}${s.role ? ` <span class="tr-role">${esc(roleLabel(s.role))}</span>` : ''}</span>`;
 }
 
+// Mismo equipo de origen y destino con rol Inactive: no es un pase, pasó a inactivo
+export function isToInactive(x) {
+  const same = x.from.status === 'team' && x.to.status === 'team'
+    && x.from.teams.length && x.from.teams.join('|').toLowerCase() === x.to.teams.join('|').toLowerCase();
+  return same && /\binactive\b/i.test(x.to.role || '');
+}
+
 function row(x, teamByName) {
   const ref = x.ref && safeUrl(x.ref);
+  const inactive = isToInactive(x);
   return `
     <div class="tr-row">
       <div class="tr-players">
@@ -67,13 +75,14 @@ function row(x, teamByName) {
       <div class="tr-move">
         ${sideHtml(x.from, teamByName)}
         <span class="tr-arrow" aria-hidden="true">${ICONS.flecha}</span><span class="visually-hidden">${esc(t('transfers.to'))}</span>
-        ${sideHtml(x.to, teamByName)}
+        ${inactive ? `<span class="tr-team none">${esc(t('transfers.toInactive'))}</span>` : sideHtml(x.to, teamByName)}
       </div>
       ${ref ? `<a class="icon-btn tr-ref" href="${esc(ref)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(t('transfers.refAria'))}" title="${esc(t('transfers.refAria'))}">↗</a>` : '<span class="tr-ref"></span>'}
     </div>`;
 }
 
-const isArrival = (x) => x.to.status === 'team';
+// Pasar a inactivo cuenta como salida, no como llegada
+const isArrival = (x) => x.to.status === 'team' && !isToInactive(x);
 
 export function viewTransfers({ state, game, header, teamByName }) {
   const tr = state.transfers;
